@@ -1,0 +1,6 @@
+import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+
+export function logger(req: Request, res: Response, next: NextFunction) {
+  console.log(`Request...`);
+  next();
+}
