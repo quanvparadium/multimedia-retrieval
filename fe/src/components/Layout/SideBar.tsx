@@ -18,6 +18,11 @@ export default function SideBar() {
       name: "Query của tôi",
       Icon: BiFileFind,
     },
+    {
+      path: "/sample",
+      name: "Ví dụ",
+      Icon: BiFileFind,
+    },    
   ];
   const [pageIndex, setPageIndex] = useState(0);
   useEffect(() => {
@@ -27,7 +32,7 @@ export default function SideBar() {
   }, [router.pathname]);
 
   return (
-    <div className="w-[300px] py-3 px-5">
+    <div className="w-1/4 h-screen py-3 px-5">
       {pages.map((page, index) => {
         return (
           <Link
