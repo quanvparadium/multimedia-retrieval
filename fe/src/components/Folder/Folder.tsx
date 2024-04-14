@@ -1,0 +1,90 @@
+import { MenuContext } from "@/src/screens/InFolder/MenuProvider";
+import Image from "next/image";
+import { useContext, useEffect, useState } from "react";
+import { IconType } from "react-icons";
+import { FaFolderClosed } from "react-icons/fa6";
+import {
+  MdOutlineCreateNewFolder,
+  MdOutlineDriveFolderUpload,
+  MdOutlineUploadFile,
+  MdOutlineFileDownload,
+  MdDriveFileRenameOutline,
+} from "react-icons/md";
+import { BsTrash3 } from "react-icons/bs";
+import { LiaTrashAlt } from "react-icons/lia";
+import { ModalContext } from "@/src/screens/InFolder/ModalProvider";
+
+export default function Folder({ folder }: IFolderProps) {
+  const { openMenu, closeMenu }: any = useContext(MenuContext);
+  const { openModal, setModalComponent, isOpen }: any = useContext(ModalContext);
+  const [value, setValue] = useState(folder.name);
+  const ModalComponent = () => {
+    return (
+      <div className="w-[360px] px-6 py-5 bg-white rounded-md flex flex-col items-start ">
+        <div className="font-normal text-xl">Rename</div>
+        <input
+          type="text"
+          className="outline-none mt-5 border-[1px] border-black rounded-lg py-2 px-3 focus:border-blue-400 w-full"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+          }}
+        />
+        <div className="flex items-end w-full justify-end">
+          <div className="mt-5 py-1 px-6 rounded-2xl bg-blue-500 hover:bg-blue-400 cursor-pointer text-white font-medium">
+            OK
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (!isOpen) setValue(folder.name);
+  }, [isOpen]);
+
+  useEffect(() => {
+    setModalComponent(ModalComponent);
+  }, [value]);
+
+  const listTasks = [
+    [
+      {
+        name: "Download",
+        Icon: MdOutlineFileDownload,
+        cb: (event: React.MouseEvent<HTMLButtonElement>) => {
+          openModal();
+          setModalComponent(ModalComponent);
+        },
+      },
+      {
+        name: "Rename",
+        Icon: MdDriveFileRenameOutline,
+        cb: (event: React.MouseEvent<HTMLButtonElement>) => {
+          closeMenu();
+          setModalComponent(ModalComponent);
+          openModal();
+        },
+      },
+    ],
+    [{ name: "Move to trash", Icon: LiaTrashAlt }],
+  ];
+  const handleRightClick = openMenu(listTasks);
+
+  return (
+    <div
+      onContextMenu={handleRightClick}
+      className="flex text-gray-600 bg-slate-100 hover:bg-slate-200 py-3 px-5 items-center rounded-xl cursor-pointer font-medium"
+    >
+      <FaFolderClosed color="gray" />
+      <div className="ml-3">{folder.name}</div>
+    </div>
+  );
+}
+export interface IFolderProps {
+  folder: IFolder;
+}
+export interface IFolder {
+  name: string;
+  link?: string;
+}

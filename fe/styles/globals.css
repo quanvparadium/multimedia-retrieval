@@ -2,3 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components { 
+    .text-1 {
+        @apply line
+    }
+    .shadow-2   {
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
+    }
+  }

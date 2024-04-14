@@ -12,7 +12,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
       <Header />
       <div className="flex flex-grow">
         <SideBar />
-        <div className="bg-white flex-grow">{children}</div>
+        <div className="bg-white flex-grow rounded-xl py-5 px-7">{children}</div>
       </div>
     </div>
   );

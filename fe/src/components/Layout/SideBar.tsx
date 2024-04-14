@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { BiFileFind } from "react-icons/bi";
 import { CgHomeAlt } from "react-icons/cg";
+import { FaRegFolderOpen } from "react-icons/fa";
 
 export default function SideBar() {
   const router = useRouter();
@@ -18,6 +19,11 @@ export default function SideBar() {
       name: "Query của tôi",
       Icon: BiFileFind,
     },
+    {
+      path: "/my-drive",
+      name: "Quản lý dữ liệu",
+      Icon: FaRegFolderOpen,
+    },
   ];
   const [pageIndex, setPageIndex] = useState(0);
   useEffect(() => {
@@ -27,7 +33,7 @@ export default function SideBar() {
   }, [router.pathname]);
 
   return (
-    <div className="w-[300px] py-3 px-5">
+    <div className="w-[300px] py-3 px-5 flex-shrink-0">
       {pages.map((page, index) => {
         return (
           <Link
