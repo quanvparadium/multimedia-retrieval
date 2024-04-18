@@ -1,0 +1,6 @@
+1.add folder env
+2.docker compose up
+3.npm i 
+4.npm run typeorm:generate --name=name_you_want
+5.npm run typeorm:run
+6.npm run dev
