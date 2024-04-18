@@ -1,6 +1,24 @@
-1.add folder env
-2.docker compose up
-3.npm i 
-4.npm run typeorm:generate --name=name_you_want
-5.npm run typeorm:run
-6.npm run dev
+# Project Setup
+Follow these steps to set up and run the project:
+
+## 1. Add Folder 'env'
+Before proceeding, ensure you have a folder named 'env' at the root of your project. This folder should contain any environment variables or configuration files needed for your project.
+
+## 2. Docker Compose Up
+docker-compose up
+
+## 3. Install Dependencies
+Install project dependencies using npm:
+npm install
+
+## 4. Generate TypeORM Entities
+To generate TypeORM entities, run the following command and replace 'name_you_want' with the desired name:
+npm run typeorm:generate --name=name_you_want
+
+## 5. Run TypeORM Migrations
+Execute TypeORM migrations with the following command:
+npm run typeorm:run
+
+## 6. Run Development Server
+Finally, start the development server:
+npm run dev
