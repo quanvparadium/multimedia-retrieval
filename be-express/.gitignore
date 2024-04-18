@@ -1,0 +1,9 @@
+# compiled output
+/dist
+/node_modules
+/build
+/zoo
+/package-lock.json
+/docs
+/migrations
+/env
