@@ -13,7 +13,9 @@ export default function BreadCrumbs({ path }: IBreadCrumbs) {
               {name}
               {names.length - 1 == index && <FaSortDown size={20} className="ml-2" />}
             </div>
-            {!(names.length - 1 == index) && <LiaGreaterThanSolid size={23} className="mt-1 mx-2" />}
+            {!(names.length - 1 == index) && (
+              <LiaGreaterThanSolid size={23} className="mt-1 mx-2" />
+            )}
           </div>
         );
       })}
