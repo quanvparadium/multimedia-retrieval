@@ -1,0 +1,8 @@
+gdown
+fastapi
+uvicorn
+faiss-cpu
+python-dotenv
+# marisa-trie
+# h5py
+# psutil
