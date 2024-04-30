@@ -13,7 +13,6 @@ def search(id: int):
 @searchRouter.post("/videos")
 async def text_search(item: Search):
     result = await text_search_controller(item)
-    print("Result", result)
     return {
         "result": result
     }

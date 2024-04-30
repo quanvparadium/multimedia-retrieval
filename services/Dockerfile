@@ -34,6 +34,9 @@ RUN pip install -e .
 
 WORKDIR /app
 
+RUN pip install -r requirements.txt
+
+RUN pip install fastapi
 EXPOSE 4001
 
 CMD ["python", "app.py"]

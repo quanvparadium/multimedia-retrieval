@@ -6,7 +6,6 @@ export const UPLOAD_IMAGE_DIR = 'uploads/images'
 export const UPLOAD_IMAGE_TEMP = 'uploads/images/temp'
 
 export const UPLOAD_VIDEO_DIR = 'uploads/videos'
-export const UPLOAD_VIDEO_TEMP = 'uploads/videos/temp'
 
 
 export const getNewFilename = (filename: string) => {
@@ -28,12 +27,11 @@ export const handleUploadImage = async (req: Request) => {
      * }
      * Output: File[]
      */
-    console.log(path.resolve(UPLOAD_IMAGE_DIR))
     const form = formidable({
         uploadDir: path.resolve(UPLOAD_IMAGE_TEMP),
         maxFiles: 100,
-        maxFileSize: 1024 * 1024, // 1 MB
-        maxTotalFileSize: 100 * 1024 * 1024, // 100 MB
+        maxFileSize: 1.5 * 1024 * 1024, // 1 MB
+        maxTotalFileSize: 150 * 1024 * 1024, // 100 MB
         keepExtensions: true,
         createDirsFromUploads: true,
         filter: ({ name, originalFilename, mimetype }) => {
@@ -44,7 +42,6 @@ export const handleUploadImage = async (req: Request) => {
             return true
         }
     })
-    console.log('handleOK')
 
     return new Promise<File[]>((resolve, reject) => {
         form.parse(req, (err, fields, files) => {
@@ -70,9 +67,8 @@ export const handleUploadVideo = async (req: Request) => {
      *     originalFilename: "football.mp4"
      * }
      */
-    console.log(path.resolve(UPLOAD_VIDEO_DIR))
     const form = formidable({
-        uploadDir: path.resolve(UPLOAD_VIDEO_TEMP),
+        uploadDir: path.resolve(UPLOAD_VIDEO_DIR),
         maxFiles: 1,
         maxFileSize: 100 * 1024 * 1024, // 50 MB
         keepExtensions: true,

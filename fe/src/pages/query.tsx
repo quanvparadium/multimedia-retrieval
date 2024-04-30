@@ -1,8 +1,14 @@
 import Layout from "../components/Layout";
 import { useState } from 'react';
+import { axiosBase, axiosSearch } from "./axios";
+
+import keyframe_id from '../../../services/features/keyframe_id.json'
+
 export default function Home() {
     const [file, setFile] = useState<File | undefined>();
     const [imageLink, setImageLink] = useState<string>();
+    const [keyframes, setKeyframes] = useState([]);
+
     const handleUpload = (e: React.FormEvent<HTMLInputElement>) => {
         e.preventDefault()
         const target = e.target as HTMLInputElement & {
@@ -25,7 +31,20 @@ export default function Home() {
             OCR: {value: string}
             Speech: {value: string}
         }
-        console.log(target.search)
+        const payload = {
+            query: target.search.value,
+            dataset: target.typedata.value,
+            topk: Number(target.topk.value),
+            OCR: target.OCR.value,
+            Speech: target.Speech.value
+        }
+        console.log(payload)
+        const result = await axiosSearch.post('/search/videos/', payload)
+        // console.log(result)
+        // setTimeout(() => {
+        //     console.log('get keyframe')
+        // }, 400)
+        setKeyframes(result.data.result)
 
 
 
@@ -133,6 +152,25 @@ export default function Home() {
                         </button>
                 </form>
 
+                <div className="grid grid-cols-1 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-auto h-3/4">
+                    {keyframes.map((value, idx) => {
+                        // const keyframeUrl = `http://localhost:${process.env.PORT || 3000}/keyframe/images?${value}`
+                        console.log(`http://localhost:${process.env.PORT || 3000}/keyframe/images?${value}`)
+                        const keyframeUrl = `http://localhost:${process.env.PORT || 3000}/keyframe/images?${value}`
+                        const[keyframe, video, index, ...rest] = (value as string).split('&')
+                        console.log(video)
+                        const video_path = `L0${keyframe.split('=')[1]}_V${parseInt(video.split('=')[1]).toString().padStart(3, '0')}`
+                        const img_path = (keyframe_id as any)[video_path][parseInt(index.split('=')[1])].split('/')
+
+                        return (
+                            <div key={idx} className="relative aspect-w-1 aspect-h-1">
+                                <div className="font-bold text-xl">{`${video_path}/${img_path[img_path.length - 1]}`}</div>
+                                <div>{}</div>
+                                <img src={keyframeUrl} alt="Image" />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </Layout>
     )

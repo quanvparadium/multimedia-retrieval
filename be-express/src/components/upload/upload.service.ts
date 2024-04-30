@@ -1,10 +1,10 @@
-import { handleUploadImage, getNewFilename } from "~/helpers/media"
+import { handleUploadImage, handleUploadVideo, getNewFilename } from "~/helpers/media"
 import { Media, MediaType } from "~/collections/media.interface"
 import sharp from 'sharp'
 import path from 'path'
 
 class UploadService {
-    async handleUploadImage(req: Request) {
+    async uploadImage(req: Request) {
         const files = await handleUploadImage(req as any)
         const result: Media[] = await Promise.all(
             files.map(async (file) => {
@@ -24,6 +24,18 @@ class UploadService {
             })
         )
         return result
+    }
+
+    async uploadVideo(req: Request) {
+        const files = await handleUploadVideo(req as any)
+        const { newFilename } = files[0]
+        console.log("New file name", newFilename)
+        return {
+            url: process.env.HOST
+                ? `${process.env.HOST}/static/videos/${newFilename}`
+                : `http://localhost:${process.env.PORT || 3000}/static/videos/${newFilename}`,
+            type: MediaType.Video
+        }
     }
 }
 const uploadService = new UploadService()

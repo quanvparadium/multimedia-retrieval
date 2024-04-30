@@ -14,7 +14,6 @@ lavis_dir = os.path.join(current_dir, 'LAVIS')
 sys.path.append(lavis_dir)
 from lavis.models import load_model_and_preprocess
 
-
 """CONSTANT"""
 bin_file='features/faiss_blip_cosine.bin'
 keyframe_id2path = 'features/keyframe_id2path.json'
@@ -41,7 +40,7 @@ async def text_search_controller(item: Search):
 
     idx_images = idx_images.flatten()
     scores = scores.flatten()
-    print(idx_images)
+    # print("Index image", idx_images)
     total_img_paths = [id2path[str(idx)] for idx in idx_images]
     result = []
     for i in total_img_paths:
@@ -51,7 +50,3 @@ async def text_search_controller(item: Search):
         idx = image_in_video.index(i)
         result.append(f'keyframe={int(keyframe_folder[-2:])}&video={int(video[-3:])}&index={idx}')
     return result
-    # print(scores)
-    # return 
-    # # print('Jsonfile', id2path["1"])
-    # pass
