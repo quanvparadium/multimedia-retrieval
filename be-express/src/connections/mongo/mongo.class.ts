@@ -1,25 +1,23 @@
-import {
-    DataSource,
-    DataSourceOptions,
-    EntityTarget,
-    ObjectLiteral
-} from 'typeorm';
+import { Document, MongoClient } from 'mongodb';
 
 export default class MongoDB {
-    private dataSource: DataSource;
-    constructor(dataSourceOptions: DataSourceOptions) {
-        this.dataSource = new DataSource(dataSourceOptions);
+    private client: MongoClient;
+    private db: string;
+    constructor(uri: string, db: string) {
+        this.client = new MongoClient(uri);
+        this.db = db;
     }
 
     public async connect() {
         try {
-            await this.dataSource.initialize();
+            await this.client.connect();
+            console.log('MongoDB connect successfully');
         } catch (err) {
             console.log(err);
         }
     }
 
-    public getRepo<T extends ObjectLiteral>(entity: EntityTarget<T>) {
-        return this.dataSource.getRepository(entity);
+    public getCollection<T extends Document>(nameCollection: string) {
+        return this.client.db(this.db).collection<T>(nameCollection);
     }
 }
