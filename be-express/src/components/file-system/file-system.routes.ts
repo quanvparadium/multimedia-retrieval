@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { catchCtrl } from '~/helpers/catchController';
 import { identify } from '../auth/auth.middleware';
-import { createFolder, getFileSystem } from './folder.controller';
+import { createFolder, getFileSystem } from './file-system.controller';
 
 const folderRoutes = express.Router();
 
