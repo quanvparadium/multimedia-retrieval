@@ -4,8 +4,8 @@ import { catchCtrl } from '~/helpers/catchController';
 
 const authRoutes = express.Router();
 
-authRoutes.use('/signup', catchCtrl(signUp));
-authRoutes.use('/login', catchCtrl(login));
-authRoutes.use('/refreshToken', catchCtrl(refreshToken));
+authRoutes.post('/signup', catchCtrl(signUp));
+authRoutes.post('/login', catchCtrl(login));
+authRoutes.post('/refreshToken', catchCtrl(refreshToken));
 
 export default authRoutes;

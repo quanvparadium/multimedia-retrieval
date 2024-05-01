@@ -28,7 +28,13 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
   return (
     <MenuContext.Provider value={{ state, setState, openMenu, closeMenu }}>
       {state.isAppear && (
-        <div style={{ position: "fixed", left: state.position.x, top: state.position.y }}>
+        <div
+          style={{
+            position: "fixed",
+            left: state.position.x,
+            top: state.position.y,
+          }}
+        >
           <div className="w-[300px]  rounded-xl shadow-2 bg-white ">
             {state.data &&
               state.data.map((tasks: any, index: string) => {

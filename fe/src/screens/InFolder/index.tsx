@@ -5,7 +5,11 @@ import { IFolder, IFolderProps } from "@/src/components/Folder/Folder";
 import Folders from "@/src/components/Folder/Folders";
 import Image from "next/image";
 import { useContext, useState } from "react";
-import { MdOutlineCreateNewFolder, MdOutlineDriveFolderUpload, MdOutlineUploadFile } from "react-icons/md";
+import {
+  MdOutlineCreateNewFolder,
+  MdOutlineDriveFolderUpload,
+  MdOutlineUploadFile,
+} from "react-icons/md";
 import { BsFileArrowUp } from "react-icons/bs";
 import MenuProvider, { MenuContext } from "./MenuProvider";
 

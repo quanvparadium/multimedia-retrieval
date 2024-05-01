@@ -32,7 +32,9 @@ export const signUp = async (req: Request, res: Response, next: NextFunction) =>
         name: dtoUser.name,
         password: await hash(dtoUser.password, 10)
     };
-    await userService.create(newUser);
+    const createdUser = await userService.create(newUser);
+    //4. Also add user in mongoDB
+    await userService.createInMongo(createdUser.id);
 
     res.status(200).json({
         message: 'Create user successfully'

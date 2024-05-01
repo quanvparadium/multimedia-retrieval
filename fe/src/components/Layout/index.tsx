@@ -12,23 +12,19 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps): JSX.Element {
   return (
     <div className="antialiased text-gray-900 bg-white">
-      <div
-        className="flex h-screen overflow-y-hidden bg-white"
-      >
+      <div className="flex h-screen overflow-y-hidden bg-white">
         <SidebarProvider>
-            <SidebarBackdrop/>
-            <CustomSidebar/>
-            <div className="flex flex-col flex-1 h-full overflow-hidden bg-sky-50">
-                <HeaderProvider>
-                    <Header/>
-                </HeaderProvider>
+          <SidebarBackdrop />
+          <CustomSidebar />
+          <div className="flex flex-col flex-1 h-full overflow-hidden bg-sky-50">
+            <HeaderProvider>
+              <Header />
+            </HeaderProvider>
 
-                <div className="p-4">
-                  {children}
-                </div>
+            <div className="p-4">{children}</div>
 
-                { /* Include footer partial here */ }
-            </div> 
+            {/* Include footer partial here */}
+          </div>
         </SidebarProvider>
       </div>
     </div>
