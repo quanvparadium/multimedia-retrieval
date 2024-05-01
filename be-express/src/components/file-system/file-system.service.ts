@@ -65,7 +65,7 @@ export default class FileSystemService {
             {
                 $project: {
                     _id: 0,
-                    name: '$dir.k',
+                    name: '$dir.k'
                 }
             }
         ]);
@@ -108,6 +108,19 @@ export default class FileSystemService {
         fileCursor.map((doc) => doc);
         const files = await fileCursor.toArray();
         return { folders, files };
+    }
+
+    public async renameFileOrFolder(userId: number, path: string, newName: string) {
+        const oldPathInMongo = this.convertPathToPathInMongo(path);
+        const userCollection = this.userService.collection;
+        await this.getTypeOfPath(userId, oldPathInMongo);
+        let newArrPath = path.split('/');
+        const newPath = newArrPath.splice(-1, 1, newName).join('/');
+        const newPathInMongo = this.convertPathToPathInMongo(newPath);
+        await userCollection.updateOne(
+            { id: userId }, // Specify the document to update
+            { $rename: { 'folder.f.f': 'folder.c' } } // Use $rename to rename the field
+        );
     }
 
     private convertPathToPathInMongo(path: string) {

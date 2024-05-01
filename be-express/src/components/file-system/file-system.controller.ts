@@ -40,3 +40,14 @@ export const getFileSystem = async (req: Request, res: Response, next: NextFunct
         }
     });
 };
+
+export const renameFileOrFolder = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    const { path, newName }: any = req.body;
+    //@ts-ignore
+    const userId = req.userId;
+    await fileSystemService.renameFileOrFolder(userId, path, newName);
+    res.status(200).json({
+        message: 'OK'
+    });
+};
