@@ -8,10 +8,8 @@ const folderRoutes = express.Router();
 folderRoutes
     .route('/')
     .post(catchCtrl(identify), catchCtrl(createFolder))
-    .get(catchCtrl(identify), catchCtrl(getFileSystem))
+    .get(catchCtrl(identify), catchCtrl(getFileSystem));
 
-folderRoutes
-    .route('/rename')
-    .patch(catchCtrl(identify), catchCtrl(renameFileOrFolder));
+folderRoutes.route('/rename').patch(catchCtrl(identify), catchCtrl(renameFileOrFolder));
 
 export default folderRoutes;

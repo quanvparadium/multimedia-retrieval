@@ -3,6 +3,7 @@ import { UserService } from '../user/user.service';
 import { AppError } from '~/errors/app-error';
 import { getValueAtPath } from '~/helpers/folder';
 import FileSystemService from './file-system.service';
+import base64 from 'base-64';
 
 export const createFolder = async (req: Request, res: Response, next: NextFunction) => {
     const fileSystemService = new FileSystemService();
@@ -29,7 +30,8 @@ export const createFolder = async (req: Request, res: Response, next: NextFuncti
 // };
 export const getFileSystem = async (req: Request, res: Response, next: NextFunction) => {
     const fileSystemService = new FileSystemService();
-    const { path }: any = req.body;
+    const { path }: any = req.query;
+    console.log(path);
     //@ts-ignore
     const userId = req.userId;
     const { folders, files } = await fileSystemService.getFileSystemOfFolder(userId, path);
