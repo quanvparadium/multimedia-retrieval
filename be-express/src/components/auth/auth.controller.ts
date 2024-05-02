@@ -57,7 +57,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             email: dtoUser.email
         }
     });
-    if (!user) throw new AppError(`User with email ${dtoUser.email} is not exist`, 400);
+    if (!user) throw new AppError(`User with email ${dtoUser.email} is not exist`, 404);
     const isCorrectPassword = await compare(dtoUser.password, user.password);
     if (!isCorrectPassword)
         throw new AppError(`User with email ${dtoUser.email} input wrong password`, 400);

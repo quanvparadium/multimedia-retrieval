@@ -8,7 +8,7 @@ export default function MyDrive() {
     <Layout>
       <MenuProvider>
         <ModalProvider>
-          <InFolder path="My drive" />
+          <InFolder path="My Drive" />
         </ModalProvider>
       </MenuProvider>
     </Layout>

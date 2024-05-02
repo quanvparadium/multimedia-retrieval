@@ -37,7 +37,6 @@ export default function CustomSidebar() {
   const [pageIndex, setPageIndex] = useState(0);
   useEffect(() => {
     const pathIndex = pages.findIndex((page) => page.path == router.pathname);
-    console.log(pageIndex);
     setPageIndex(pathIndex);
   }, [router.pathname]);
   return (
@@ -59,7 +58,7 @@ export default function CustomSidebar() {
       >
         <span className="flex-shrink-0 flex items-center font-medium text-xl text-gray-700">
           {/* <span className="p-2 text-xl font-semibold leading-8 tracking-wider uppercase whitespace-nowrap justify-center"> */}
-          <Image className="w-8 h-8" src="logo.svg" alt="logo" width={400} height={400} />
+          <Image className="w-8 h-8" src="/logo.svg" alt="logo" width={400} height={400} />
           <span className={classNames("ml-2", { "lg:hidden": !isSidebarOpen })}>
             Retrieval System
           </span>

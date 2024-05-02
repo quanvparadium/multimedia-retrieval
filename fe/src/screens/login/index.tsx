@@ -1,6 +1,51 @@
+import { authApi } from "@/src/apis/auth/auth.api";
+import { userApi } from "@/src/apis/user/user.api";
+import { useAppDispatch, useAppSelector } from "@/src/store/store";
+import { getUser, setUser } from "@/src/store/user/userSlice";
 import Image from "next/image";
+import { useRouter } from "next/router";
+import { FormEventHandler, useEffect, useState } from "react";
 
 export default function Login() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  useEffect(() => {
+    const getMySelf = async () => {
+      try {
+        const data: any = await userApi.getMe();
+        dispatch(setUser(data.user));
+        router.push("/");
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    getMySelf();
+  }, []);
+
+  const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const data: any = await authApi.login(formData);
+      if (data.tokens) {
+        localStorage.setItem("accessToken", data.tokens.accessToken);
+        localStorage.setItem("refreshToken", data.tokens.refreshToken);
+      }
+      router.push("/");
+    } catch (err) {
+      console.log(err);
+    }
+  };
   return (
     <div className="bg-red-200">
       <section className="bg-gray-50  ">
@@ -14,7 +59,12 @@ export default function Login() {
               <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl ">
                 Sign in to your account
               </h1>
-              <form className="space-y-4 md:space-y-6" action="#">
+              <form
+                className="space-y-4 md:space-y-6"
+                action="#"
+                onSubmit={handleSubmit}
+                onChange={handleChange}
+              >
                 <div>
                   <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 ">
                     Your email

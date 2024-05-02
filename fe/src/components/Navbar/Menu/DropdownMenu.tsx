@@ -4,8 +4,13 @@ import { FaRegBell } from "react-icons/fa";
 import { HiOutlineViewGrid } from "react-icons/hi";
 import { MdPayment } from "react-icons/md";
 import { IoSettingsOutline } from "react-icons/io5";
+import { useAppSelector } from "@/src/store/store";
+import { getUser } from "@/src/store/user/userSlice";
+import { useRouter } from "next/router";
 
 export default function DropdownMenu() {
+  const user: any = useAppSelector(getUser);
+  const router = useRouter();
   return (
     <div>
       {/* Notification */}
@@ -107,8 +112,8 @@ export default function DropdownMenu() {
         </Dropdown.Button>
         <Dropdown.Items className="absolute z-50 w-48 max-w-md mt-4 transform bg-white rounded-md shadow-lg -translate-x-[84%] min-w-max">
           <div className="flex flex-col p-4 space-y-1 font-medium border-b">
-            <span className="text-gray-800">Nguyễn Văn Bảo Nguyên</span>
-            <span className="text-sm text-gray-400">nguyen.nguyen150102@example.com</span>
+            <span className="text-gray-800">{user?.name}</span>
+            <span className="text-sm text-gray-400">{user?.email}</span>
           </div>
 
           <ul className="flex flex-col p-2 my-2 space-y-1">
@@ -123,8 +128,15 @@ export default function DropdownMenu() {
               </a>
             </li>
           </ul>
-          <div className="flex items-center justify-center p-4 text-blue-700 underline border-t">
-            <a href="#">Logout</a>
+          <div
+            className="flex items-center justify-center px-2 py-2 text-blue-700 underline border-t cursor-pointer hover:bg-gray-100"
+            onClick={(e) => {
+              localStorage.removeItem("accessToken");
+              localStorage.removeItem("refreshToken");
+              router.push("/login");
+            }}
+          >
+            <p>Logout</p>
           </div>
         </Dropdown.Items>
       </Dropdown>

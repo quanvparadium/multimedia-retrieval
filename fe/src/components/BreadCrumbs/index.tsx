@@ -1,7 +1,6 @@
 import Image from "next/image";
-import { LiaGreaterThanSolid } from "react-icons/lia";
 import { FaSortDown } from "react-icons/fa";
-
+import { FaGreaterThan } from "react-icons/fa6";
 export default function BreadCrumbs({ path }: IBreadCrumbs) {
   const names = path.split("/");
   return (
@@ -14,7 +13,7 @@ export default function BreadCrumbs({ path }: IBreadCrumbs) {
               {names.length - 1 == index && <FaSortDown size={20} className="ml-2" />}
             </div>
             {!(names.length - 1 == index) && (
-              <LiaGreaterThanSolid size={23} className="mt-1 mx-2" />
+              <FaGreaterThan size={14} className="mt-1 mx-2 font-bold" fontSize={600} />
             )}
           </div>
         );
