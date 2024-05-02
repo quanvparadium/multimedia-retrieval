@@ -3,18 +3,22 @@ import { IFile, IFileProps } from "@/src/components/File/File";
 import Files from "@/src/components/File/Files";
 import { IFolder, IFolderProps } from "@/src/components/Folder/Folder";
 import Folders from "@/src/components/Folder/Folders";
-import Image from "next/image";
 import { useContext, useEffect, useRef, useState } from "react";
 import {
   MdOutlineCreateNewFolder,
   MdOutlineDriveFolderUpload,
   MdOutlineUploadFile,
 } from "react-icons/md";
-import { BsFileArrowUp } from "react-icons/bs";
 import MenuProvider, { MenuContext } from "./MenuProvider";
 import { ModalContext } from "./ModalProvider";
+import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
+import base64 from "base-64";
 
-const defaultFolder = [{ name: "abc" }, { name: "Canh moi" }, { name: "Khoe" }];
+const defaultFolder = [
+  { name: "abc", dir: "" },
+  { name: "Canh moi", dir: "" },
+  { name: "Khoe", dir: "" },
+];
 
 const defaultFiles = [
   {
@@ -41,13 +45,14 @@ const defaultFiles = [
 ];
 
 export default function InFolder({ path }: IInFolder) {
-  const [files, setFiles] = useState<IFile[]>(defaultFiles);
-  const [folders, setFolders] = useState<IFolder[]>(defaultFolder);
+  const [files, setFiles] = useState<IFile[]>([]);
+  const [folders, setFolders] = useState<IFolder[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [value, setValue] = useState("");
   const { openModal, setModalComponent, isOpen }: any = useContext(ModalContext);
   const { openMenu, closeMenu }: any = useContext(MenuContext);
+
   const ModalComponent = () => {
     return (
       <div className="w-[360px] px-6 py-5 bg-white rounded-md flex flex-col items-start ">
@@ -76,6 +81,20 @@ export default function InFolder({ path }: IInFolder) {
     if (!fileInputRef?.current) return;
     fileInputRef.current.click();
   };
+
+  useEffect(() => {
+    const realPath = path.split("/").slice(1).join("/");
+    const getFoldersAndFiles = async () => {
+      try {
+        const res = await fileSystemApi.getFileSystemOfFolder(realPath);
+        const { folders } = res.data;
+        const newFolders: IFolder[] = folders.map((folder: any) => ({ ...folder, dir: realPath }));
+        console.log(newFolders, realPath, path);
+        setFolders(newFolders);
+      } catch (error) {}
+    };
+    getFoldersAndFiles();
+  }, [path]);
 
   const handleNewFolder = () => {
     setValue("");

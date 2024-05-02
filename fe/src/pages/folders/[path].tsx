@@ -15,17 +15,20 @@ export default function Folder() {
       const encodedPath: any = router.query.path;
       setPath(base64.decode(encodedPath));
     } catch (error) {
-      router.push('/my-drive')
+      console.log(1);
+      router.push("/my-drive");
     }
   }, [router.query.path]);
-  
+
   return (
     <Layout>
-      <MenuProvider>
-        <ModalProvider>
-          <InFolder path={`My Drive/${path}`} />
-        </ModalProvider>
-      </MenuProvider>
+      {path && (
+        <MenuProvider>
+          <ModalProvider>
+            <InFolder path={`My Drive/${path}`} />
+          </ModalProvider>
+        </MenuProvider>
+      )}
     </Layout>
   );
 }

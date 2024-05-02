@@ -3,18 +3,14 @@ import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
 import { IconType } from "react-icons";
 import { FaFolderClosed } from "react-icons/fa6";
-import {
-  MdOutlineCreateNewFolder,
-  MdOutlineDriveFolderUpload,
-  MdOutlineUploadFile,
-  MdOutlineFileDownload,
-  MdDriveFileRenameOutline,
-} from "react-icons/md";
-import { BsTrash3 } from "react-icons/bs";
+import { MdOutlineFileDownload, MdDriveFileRenameOutline } from "react-icons/md";
 import { LiaTrashAlt } from "react-icons/lia";
 import { ModalContext } from "@/src/screens/InFolder/ModalProvider";
+import base64 from "base-64";
+import { useRouter } from "next/router";
 
 export default function Folder({ folder }: IFolderProps) {
+  const router = useRouter();
   const { openMenu, closeMenu }: any = useContext(MenuContext);
   const { openModal, setModalComponent, isOpen }: any = useContext(ModalContext);
   const [value, setValue] = useState(folder.name);
@@ -75,6 +71,11 @@ export default function Folder({ folder }: IFolderProps) {
     <div
       onContextMenu={handleRightClick}
       className="flex text-gray-600 bg-slate-100 hover:bg-slate-200 py-3 px-5 items-center rounded-xl cursor-pointer font-medium"
+      onDoubleClick={() => {
+        const nextDir = folder.dir == "" ? folder.name : `${folder.dir}/${folder.name}`;
+        const encodedNextDir = base64.encode(nextDir);
+        router.push(`/folders/${encodedNextDir}`);
+      }}
     >
       <FaFolderClosed color="gray" />
       <div className="ml-3">{folder.name}</div>
@@ -86,5 +87,5 @@ export interface IFolderProps {
 }
 export interface IFolder {
   name: string;
-  link?: string;
+  dir: string;
 }
