@@ -15,7 +15,6 @@ export default function Folder() {
       const encodedPath: any = router.query.path;
       setPath(base64.decode(encodedPath));
     } catch (error) {
-      console.log(1);
       router.push("/my-drive");
     }
   }, [router.query.path]);

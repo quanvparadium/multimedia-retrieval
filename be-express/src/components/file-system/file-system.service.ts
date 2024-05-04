@@ -115,14 +115,15 @@ export default class FileSystemService {
         const userCollection = this.userService.collection;
         await this.getTypeOfPath(userId, oldPathInMongo);
         let newArrPath = path.split('/');
-        const newPath = newArrPath.splice(-1, 1, newName).join('/');
+        newArrPath.splice(-1, 1, newName);
+        const newPath = newArrPath.join('/');
         const newPathInMongo = this.convertPathToPathInMongo(newPath);
         await userCollection.updateOne(
             { id: userId }, // Specify the document to update
-            { $rename: { 'folder.f.f': 'folder.c' } } // Use $rename to rename the field
+            { $rename: { [oldPathInMongo]: newPathInMongo } } // Use $rename to rename the field
         );
     }
-
+    
     private convertPathToPathInMongo(path: string) {
         const pathToFolder = path
             .split('/')

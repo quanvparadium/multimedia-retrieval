@@ -1,6 +1,7 @@
 import File, { IFile } from "./File";
 
 export default function Files({ files }: IFilesProps) {
+  if (!files?.length) return;
   return (
     <div className="">
       <p className="font-medium text-gray-600">Files</p>

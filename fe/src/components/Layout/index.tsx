@@ -34,12 +34,12 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
         <SidebarProvider>
           <SidebarBackdrop />
           <CustomSidebar />
-          <div className="flex flex-col flex-1 h-full overflow-hidden bg-sky-50 ">
+          <div className="flex flex-col flex-1 max-h-max overflow-hidden bg-sky-50 ">
             <HeaderProvider>
               <Header />
             </HeaderProvider>
 
-            <div className="p-4 bg-white">{children}</div>
+            <div className="p-4 bg-white h-full">{children}</div>
 
             {/* Include footer partial here */}
           </div>

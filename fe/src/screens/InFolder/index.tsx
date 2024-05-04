@@ -13,6 +13,7 @@ import MenuProvider, { MenuContext } from "./MenuProvider";
 import { ModalContext } from "./ModalProvider";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 import base64 from "base-64";
+import { useRouter } from "next/router";
 
 const defaultFolder = [
   { name: "abc", dir: "" },
@@ -50,8 +51,20 @@ export default function InFolder({ path }: IInFolder) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [value, setValue] = useState("");
-  const { openModal, setModalComponent, isOpen }: any = useContext(ModalContext);
+  const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
   const { openMenu, closeMenu }: any = useContext(MenuContext);
+  const router = useRouter();
+
+  const getFoldersAndFiles = async () => {
+    try {
+      const realPath = path.split("/").slice(1).join("/");
+      const res = await fileSystemApi.getFileSystemOfFolder(realPath);
+      const { folders } = res.data;
+      const newFolders: IFolder[] = folders.map((folder: any) => ({ ...folder, dir: realPath }));
+      console.log(newFolders, realPath, path);
+      setFolders(newFolders);
+    } catch (error) {}
+  };
 
   const ModalComponent = () => {
     return (
@@ -66,7 +79,20 @@ export default function InFolder({ path }: IInFolder) {
           }}
         />
         <div className="flex items-end w-full justify-end">
-          <div className="mt-5 py-1 px-6 rounded-2xl bg-blue-500 hover:bg-blue-400 cursor-pointer text-white font-medium">
+          <div
+            className="mt-5 py-1 px-6 rounded-2xl bg-blue-500 hover:bg-blue-400 cursor-pointer text-white font-medium"
+            onClick={async () => {
+              const realPath = path.split("/").slice(1).join("/");
+              try {
+                const data = await fileSystemApi.createNewFolder(realPath, value);
+                await getFoldersAndFiles();
+                closeModal();
+                console.log(data);
+              } catch (error) {
+                console.log(error);
+              }
+            }}
+          >
             Create
           </div>
         </div>
@@ -75,7 +101,7 @@ export default function InFolder({ path }: IInFolder) {
   };
   useEffect(() => {
     setModalComponent(ModalComponent);
-  }, [value]);
+  }, [value, path]);
 
   const handleFileUpload = () => {
     if (!fileInputRef?.current) return;
@@ -83,16 +109,6 @@ export default function InFolder({ path }: IInFolder) {
   };
 
   useEffect(() => {
-    const realPath = path.split("/").slice(1).join("/");
-    const getFoldersAndFiles = async () => {
-      try {
-        const res = await fileSystemApi.getFileSystemOfFolder(realPath);
-        const { folders } = res.data;
-        const newFolders: IFolder[] = folders.map((folder: any) => ({ ...folder, dir: realPath }));
-        console.log(newFolders, realPath, path);
-        setFolders(newFolders);
-      } catch (error) {}
-    };
     getFoldersAndFiles();
   }, [path]);
 
