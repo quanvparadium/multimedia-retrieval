@@ -92,6 +92,8 @@ $ pwd # ..../services
 
 # Install backend package Fastapi
 $ pip install -r requirements.txt
+$ pip install -r postenv.txt
+$ export PYTHONPATH=./LAVIS
 $ python app.py
 ```
 

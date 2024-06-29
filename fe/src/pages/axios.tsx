@@ -1,6 +1,6 @@
 import axios from 'axios'
 const BACKEND_URL = 'http://localhost:3000'
-const SEARCH_URL = 'http://localhost:4001'
+const SEARCH_URL = 'http://localhost:4000'
 
 export const axiosBase = axios.create({
     baseURL: `${BACKEND_URL}`, // Đặt baseURL của API của bạn

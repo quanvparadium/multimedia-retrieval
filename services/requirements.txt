@@ -1,8 +1,14 @@
-gdown
-fastapi
-uvicorn
-faiss-cpu
-python-dotenv
+# gdown
+# fastapi
+# uvicorn
+# faiss-cpu
+# python-dotenv
 # marisa-trie
 # h5py
 # psutil
+google-api-python-client
+# youtube-dl
+
+git+https://github.com/ytdl-org/youtube-dl.git@master#egg=youtube_dl
+# pafy
+# youtube-dl
