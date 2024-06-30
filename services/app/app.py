@@ -2,10 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from router import mainRouter
+from config.index import *
 from dotenv import load_dotenv
 load_dotenv()
-# from routes.item_routes import router as item_router
-print("Accept Origin: ", f"{os.getenv('HOST')}:{os.getenv('FRONTEND_PORT')}")
 
 app = FastAPI()
 # 
@@ -13,6 +12,10 @@ origins = [
     f"{os.getenv('HOST')}",
     f"{os.getenv('HOST')}:{os.getenv('FRONTEND_PORT')}",
 ]
+
+from connections.postgres import psg_manager
+psg_manager.create_tables()
+
 app.include_router(router=mainRouter, prefix='/api')
 
 app.add_middleware(

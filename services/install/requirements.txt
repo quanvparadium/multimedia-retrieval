@@ -1,0 +1,14 @@
+# gdown
+fastapi==0.110.2
+uvicorn==0.29.0
+faiss-cpu==1.8.0
+python-dotenv==1.0.1
+# marisa-trie
+# h5py
+# psutil
+google-api-python-client==2.134.0
+sqlalchemy 
+alembic==1.13.2
+psycopg2-binary==2.9.9
+pgvector==0.3.0
+git+https://github.com/ytdl-org/youtube-dl.git@master#egg=youtube_dl

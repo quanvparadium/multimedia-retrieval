@@ -23,6 +23,10 @@ class VideoCrawler:
             print("======================")
             print(video)
             print("Video Id: ", video['id'])
+    
+    def get_video(videoId):
+        video = pafy.new(videoId)
+        print("Video content: ", video)
             
 
         

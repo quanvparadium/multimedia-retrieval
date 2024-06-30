@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter
 from .video.services import VideoCrawler
 from pydantic import BaseModel
@@ -8,13 +9,24 @@ class Item(BaseModel):
     id: str
 
 @crawlRouter.get('/')
-def status():
-    result = VideoCrawler.get_newest_video()
+async def status(id: Optional[str] = None):
+    print("Id: ", id)
+    if id != None:
+        result = VideoCrawler.get_video(videoId=id)
+    else: 
+        result = VideoCrawler.get_newest_video()
     status = "In processing"
     return {
         "status": status
     }
 
+# @crawlRouter.get('/')
+# def get_video():
+#     result = VideoCrawler.get_video(videoId=id)
+#     status = "In processing"
+#     return {
+#         "status": status
+#     }
 # @crawlRouter.post('/{type}/')
 # def extract(type: str, item: Item):
 #     print("Preprocessing here")

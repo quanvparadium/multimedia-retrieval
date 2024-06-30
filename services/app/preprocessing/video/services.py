@@ -8,9 +8,8 @@ from .models.transnet_utils import scenes_from_predictions
 
 params = TransNetParams()
 params.CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
-params.INPUT
-print("Input width: ", params.INPUT_WIDTH)
-print("Input height: ", params.INPUT_HEIGHT)
+# print("Input width: ", params.INPUT_WIDTH)
+# print("Input height: ", params.INPUT_HEIGHT)
 
 net = TransNet(params)
 """Add Database path"""

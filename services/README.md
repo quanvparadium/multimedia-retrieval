@@ -96,6 +96,30 @@ $ pip install -r postenv.txt
 $ export PYTHONPATH=./LAVIS
 $ python app.py
 ```
+Nếu sử dụng môi trường MacOS, vui lòng chạy "brew install postgis" để kích hoạt pgvector extension
+Nếu sử dụng môi trường Linux, vui lòng chạy "apt-get install postgis*" để kích hoạt pgvector extension
+
+Vui lòng đọc kĩ cài đặt Pgvector ở đây: github.com/pgvector/pgvector#missing-header
+
+## Cài dặt pg extension, giả định đã có postgresql@15 trên máy
+
+```bash
+$ pwd
+/Users/admin/..../services
+
+$ mkdir repo
+$ cd repo
+$ git clone --branch v0.7.2 https://github.com/pgvector/pgvector.git
+$ cd pgvector
+
+$ export PG_CONFIG=/opt/homebrew/opt/postgresql@15/bin/pg_config
+$ sudo --preserve-env=PG_CONFIG make install                    
+
+$ psql postgres
+postgres=# CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION
+postgres=# \q
+```
 
 #### Sử dụng Docker (Chưa hoàn thành)
 ```bash
