@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from .video.services import VideoPreprocessing
-from .schemas import VideoItem, DocumentItem
-from typing import Union
+from .schemas import VideoItem, DocumentItem, Item
 preprocessRouter = APIRouter()
 
 import os
@@ -24,21 +23,18 @@ def status(type: str, id: int):
         "status": status
     }
 
-@preprocessRouter.post('/{type}/{id}')
-def extract_keyframe(type: str, id: int):
-    assert type in ["video", "document", "image"], "Type must be in (Video, Document, Image)" 
-    print("Preprocessing here")
-    result = None
-    if type == "video":
-        print("Preprocessing ...")
-        # video_dir = AWSS3download
-        # video_name = VideoPreprocessing.get_path(item.id)
-        result = VideoPreprocessing.extract_keyframe(id)
-        # result = VideoPreprocessing.extract_keyframe(video_path=f"{video_dir}/{item.id}.mp4", threshold=item.threshold, width=property['width'], height=property['height'])
-    else:
-        print(f"1{type}1")
+@preprocessRouter.post('/video/')
+def extract_keyframe(item: VideoItem):
+    print("Processing video ...")
+    result = VideoPreprocessing.extract_keyframe(int(item.id))
     return result
 
+
+@preprocessRouter.post('/document/')
+def extract_keyframe(item: VideoItem):
+    print("Processing document ...")
+    result = VideoPreprocessing.extract_keyframe(int(item.id))
+    return result
 
 # @preprocessRouter.post('/{type}/')
 # def extract(type: str, item: Union[VideoItem, DocumentItem]):

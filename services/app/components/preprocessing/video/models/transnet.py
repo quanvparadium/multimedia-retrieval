@@ -5,19 +5,23 @@ import tensorflow as tf
 
 
 class TransNetParams:
-    F = 16
-    L = 3
-    S = 2
-    D = 256
-    INPUT_WIDTH = 48
-    INPUT_HEIGHT = 27
-    CHECKPOINT_PATH = None
+    def __init__(self):
+        self.F = 16
+        self.L = 3
+        self.S = 2
+        self.D = 256
+        self.INPUT_WIDTH = 48
+        self.INPUT_HEIGHT = 27
+        self.CHECKPOINT_PATH = None
+    
+    
 
 
 class TransNet:
 
     def __init__(self, params: TransNetParams, session=None, print_model=False):
         self.params = params
+        print("Parameters: ", params.INPUT_HEIGHT, params.INPUT_WIDTH)
         self.session = session or tf.compat.v1.Session()
         self._build(print_model)
         self._restore()
@@ -110,11 +114,14 @@ class TransNet:
                 yield out
 
         res = []
+        import time
+        start_time = time.time()
         for inp in input_iterator():
             pred = self.predict_raw(np.expand_dims(inp, 0))[0, 25:75]
             res.append(pred)
             print("\r[TransNet] Processing video frames {}/{}".format(
                 min(len(res) * 50, len(frames)), len(frames)
             ), end="")
+        print("Execution time: ", time.time() - start_time, " seconds")
         print("")
         return np.concatenate(res)[:len(frames)]  # remove extra padded frames

@@ -10,12 +10,11 @@ import tensorflow as tf
 from .models.transnet import TransNetParams, TransNet
 from .models.transnet_utils import scenes_from_predictions
 
-
+DEFAULT_CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
 
 params = TransNetParams()
 params.CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
-params.INPUT_WIDTH = 256
-params.INPUT_HEIGHT = 144
+# params.set()
 # print("Input width: ", params.INPUT_WIDTH)
 # print("Input height: ", params.INPUT_HEIGHT)
 
@@ -32,31 +31,39 @@ class VideoPreprocessing:
         db = psg_manager.get_session()
         data = db.query(Data).filter(Data.type == "video", Data.id == videoId).first()
         video_path = data.address
-        property = VideoPreprocessing.get_video_properties(video_path)
-        width = property['width']
-        height = property['height']
-        current_video =  ffmpeg.input(video_path)
-        print(current_video)
-        current_video
+        source_id = video_path.split('_')[-1][:-4]
+        print("Initializing Transnet model ...")
+
+        print("Initialize done !")
         video_stream, err = (
-            current_video
-            .output('pipe:', format='rawvideo', pix_fmt='rgb24', s='{}x{}'.format(width, height))
+            ffmpeg
+            .input(video_path)
+            .output('pipe:', format='rawvideo', pix_fmt='rgb24', s='{}x{}'.format(params.INPUT_WIDTH, params.INPUT_HEIGHT))
             .run(capture_stdout=True)
         )
         
-        video = np.frombuffer(video_stream, np.uint8).reshape([-1, height, width, 3])
-        print(video[1832].shape)
+        video = np.frombuffer(video_stream, np.uint8).reshape([-1, params.INPUT_HEIGHT, params.INPUT_WIDTH, 3])
         # predict transitions using the neural network
         predictions = net.predict_video(video)
-        print("Satisf: ", len([pred for pred in predictions if pred > threshold]))
+
         scenes = scenes_from_predictions(predictions, threshold=threshold)
-        print(type(predictions[1832]))
-        print(predictions[1832])
+        keyframe_indices = []
         for idx, scene in enumerate(scenes):
             print(f"Frame {idx} - Scene range: ", scene)
+            keyframe_indices.append(scene[0])
+            keyframe_indices.append(scene[1])
         print(predictions.shape)
+        print("Keyframe: ", keyframe_indices)
+        
+        for index in keyframe_indices:
+            output_path = os.path.join('./tmp/keyframes', f"{source_id}_{index}.jpg")
+            ffmpeg_command = f"ffmpeg -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{index})'\" -vsync vfr -frames:v 1 {output_path}"
+            os.system(ffmpeg_command)
+            print(f"Extracted keyframe {index} to {output_path}")
+
+        print("Keyframes extracted and saved successfully.")
         return {
-            "shape": predictions.shape
+            "shape": predictions.shape,
         }
 
     @staticmethod
