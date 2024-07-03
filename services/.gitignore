@@ -8,3 +8,4 @@ LAVIS/
 *.mp4
 *.ipynb
 repo/
+tmp/

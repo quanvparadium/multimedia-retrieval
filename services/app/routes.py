@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from preprocessing.router import preprocessRouter
-from crawl.router import crawlRouter
+from components.preprocessing.routes import preprocessRouter
+from components.crawl.routes import crawlRouter
+from components.user.routes import userRouter
 mainRouter = APIRouter()
 
 mainRouter.include_router(router=preprocessRouter, prefix="/preprocessing")
 mainRouter.include_router(router=crawlRouter, prefix="/crawl")
+mainRouter.include_router(router=userRouter, prefix="/user")
 
 @mainRouter.get("/")
 def home():

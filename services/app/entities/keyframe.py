@@ -9,8 +9,13 @@ from pgvector.sqlalchemy import Vector
     
 class Keyframe(psg_manager.Base):
     __tablename__ = 'keyframes'
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    video_id = Column(Integer, ForeignKey('videos.id'), nullable=False)
-    path = Column(String, nullable=False)
-    embedding = Column(Vector(256))
-    video = relationship("Video", back_populates="keyframes")
+    width = Column(Integer, nullable=False)
+    height = Column(Integer, nullable=False)
+    embedding = Column(Vector(256), nullable=True)  # Allow null values
+    store = Column(String, nullable=False)
+    address = Column(String, nullable=False)
+    dataId = Column(Integer, ForeignKey('data.id'), nullable=False)
+
+    data = relationship("Data", back_populates="keyframes")
