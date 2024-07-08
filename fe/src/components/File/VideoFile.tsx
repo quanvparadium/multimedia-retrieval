@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Fragment, useState } from "react";
 import { RiFolderVideoFill } from "react-icons/ri";
 import { Dialog, Transition } from "@headlessui/react";
+import { IFileProps } from "./File";
 
 export default function VideoFile({ file }: IFileProps) {
   let [isOpen, setIsOpen] = useState(false);
@@ -25,13 +26,13 @@ export default function VideoFile({ file }: IFileProps) {
         <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
       </div>
       <div className="w-full aspect-square bg-black rounded-xl " onClick={openModal}>
-        <Image
+        {/* <Image
           src={file.thumbnail}
           width={500}
           height={500}
           className="w-full h-full rounded-lg object-contain"
           alt=""
-        />
+        /> */}
       </div>
 
       <Transition appear show={isOpen} as={Fragment}>
@@ -65,11 +66,13 @@ export default function VideoFile({ file }: IFileProps) {
                     <p className="ml-2"> {file.name}</p>
                   </div>
                   <video
-                    src={file.link}
+                    // src={file.link}
                     controls // Display native video controls
                     autoPlay={true} // Set to true if you want the video to start playing automatically
                     loop={false} // Set to true if you want the video to loop
                     muted={false} // Set to true if you want the video to be muted
+                    accessKey=""
+                    security=""
                   />
                 </Dialog.Panel>
               </Transition.Child>
@@ -81,14 +84,3 @@ export default function VideoFile({ file }: IFileProps) {
   );
 }
 
-export interface IFileProps {
-  file: IFile;
-}
-
-export interface IFile {
-  type: string;
-  name: string;
-  thumbnail: string;
-  link: string;
-  size: string;
-}

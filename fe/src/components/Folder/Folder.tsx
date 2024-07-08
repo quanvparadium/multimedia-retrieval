@@ -32,14 +32,14 @@ export default function Folder({ folder }: IFolderProps) {
           <div
             className="mt-5 py-1 px-6 rounded-2xl bg-blue-500 hover:bg-blue-400 cursor-pointer text-white font-medium"
             onClick={async () => {
-              try {
-                const data = await fileSystemApi.rename(`${folder.dir}/${name}`, value);
-                setName(value);
-                closeModal();
-                console.log(data);
-              } catch (error) {
-                console.log(error);
-              }
+              // try {
+              //   const data = await fileSystemApi.rename(`${folder.dir}/${name}`, value);
+              //   setName(value);
+              //   closeModal();
+              //   console.log(data);
+              // } catch (error) {
+              //   console.log(error);
+              // }
             }}
           >
             OK
@@ -82,9 +82,7 @@ export default function Folder({ folder }: IFolderProps) {
       onContextMenu={handleRightClick}
       className="flex text-gray-600 bg-slate-100 hover:bg-slate-200 py-3 px-5 items-center rounded-xl cursor-pointer font-medium"
       onDoubleClick={() => {
-        const nextDir = folder.dir == "" ? name : `${folder.dir}/${name}`;
-        const encodedNextDir = base64.encode(nextDir);
-        router.push(`/folders/${encodedNextDir}`);
+        router.push(`/folders/${folder._id}`);
       }}
     >
       <FaFolderClosed color="gray" />
@@ -97,5 +95,5 @@ export interface IFolderProps {
 }
 export interface IFolder {
   name: string;
-  dir: string;
+  _id: string;
 }

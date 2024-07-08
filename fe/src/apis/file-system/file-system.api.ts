@@ -5,13 +5,16 @@ import { axiosWithToken } from "../axios-base";
 // };
 
 export const fileSystemApi = {
-  getFileSystemOfFolder: async (path: string) => {
-    return axiosWithToken.get(`/api/folders`, { params: { path } });
+  getFileSystemOfFolder: async (id: string) => {
+    return axiosWithToken.get(`/api/folders`, { params: { id } });
   },
-  createNewFolder: async (path: string, folderName: string) => {
-    return axiosWithToken.post(`/api/folders`, { path, folderName });
+  getMyDrive: async () => {
+    return axiosWithToken.get(`/api/folders/my-drive`);
   },
-  rename: async (path: string, newName: string) => {
-    return axiosWithToken.post(`/api/folders/rename`, { path, newName });
+  createNewFolder: async (parentFolderId: string | undefined, folderName: string) => {
+    return axiosWithToken.post(`/api/folders`, { parentId: parentFolderId, folderName });
   },
+  // rename: async (path: string, newName: string) => {
+  //   return axiosWithToken.post(`/api/folders/rename`, { path, newName });
+  // },
 };

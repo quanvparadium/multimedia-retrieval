@@ -14,6 +14,7 @@ import { ModalContext } from "./ModalProvider";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 import base64 from "base-64";
 import { useRouter } from "next/router";
+import { uploadApi } from "@/src/apis/upload/upload.api";
 
 const defaultFolder = [
   { name: "abc", dir: "" },
@@ -45,9 +46,11 @@ const defaultFiles = [
   },
 ];
 
-export default function InFolder({ path }: IInFolder) {
+export default function InFolder({ folderId }: IInFolder) {
+  if (!folderId) return <></>;
   const [files, setFiles] = useState<IFile[]>([]);
   const [folders, setFolders] = useState<IFolder[]>([]);
+  const [ancestorData, setAncestorData] = useState<any>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [value, setValue] = useState("");
@@ -57,13 +60,16 @@ export default function InFolder({ path }: IInFolder) {
 
   const getFoldersAndFiles = async () => {
     try {
-      const realPath = path.split("/").slice(1).join("/");
-      const res = await fileSystemApi.getFileSystemOfFolder(realPath);
-      const { folders } = res.data;
-      const newFolders: IFolder[] = folders.map((folder: any) => ({ ...folder, dir: realPath }));
-      console.log(newFolders, realPath, path);
-      setFolders(newFolders);
-    } catch (error) {}
+      const res = await fileSystemApi.getFileSystemOfFolder(folderId);
+      const { ancestorData, childrenData } = res.data;
+      childrenData.sort((a: any, b: any) => a._id > b._id ? 1 : -1);
+      const folders = childrenData.filter((data: any) => data.type == 'folder');
+      const files = childrenData.filter((data: any) => data.type == 'file');
+      console.log(files);
+      setAncestorData(ancestorData);
+      setFolders(folders);
+      setFiles(files);
+    } catch (error) { }
   };
 
   const ModalComponent = () => {
@@ -82,12 +88,10 @@ export default function InFolder({ path }: IInFolder) {
           <div
             className="mt-5 py-1 px-6 rounded-2xl bg-blue-500 hover:bg-blue-400 cursor-pointer text-white font-medium"
             onClick={async () => {
-              const realPath = path.split("/").slice(1).join("/");
               try {
-                const data = await fileSystemApi.createNewFolder(realPath, value);
+                const data = await fileSystemApi.createNewFolder(folderId, value);
                 await getFoldersAndFiles();
                 closeModal();
-                console.log(data);
               } catch (error) {
                 console.log(error);
               }
@@ -101,7 +105,7 @@ export default function InFolder({ path }: IInFolder) {
   };
   useEffect(() => {
     setModalComponent(ModalComponent);
-  }, [value, path]);
+  }, [value, folderId]);
 
   const handleFileUpload = () => {
     if (!fileInputRef?.current) return;
@@ -110,7 +114,7 @@ export default function InFolder({ path }: IInFolder) {
 
   useEffect(() => {
     getFoldersAndFiles();
-  }, [path]);
+  }, [folderId]);
 
   const handleNewFolder = () => {
     setValue("");
@@ -119,14 +123,22 @@ export default function InFolder({ path }: IInFolder) {
     closeMenu();
   };
 
-  const handleUpload = (e: React.FormEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const target = e.target as HTMLInputElement & {
-      files: FileList;
-    };
-    const selectedFiles = Object.values(target.files);
-    console.log(selectedFiles);
-    setSelectedFiles(target.files);
+  const handleUpload = async (e: React.FormEvent<HTMLInputElement>) => {
+    try {
+      e.preventDefault();
+      const target = e.target as HTMLInputElement & {
+        files: FileList;
+      };
+      const selectedFiles = Object.values(target.files);
+      const formData = new FormData();
+      for (const file of selectedFiles) {
+        formData.append('blobs', file);
+      }
+      await uploadApi.upload(folderId, formData);
+      await getFoldersAndFiles();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const listTasks = [
@@ -138,10 +150,9 @@ export default function InFolder({ path }: IInFolder) {
   ];
 
   const handleRightClick = openMenu(listTasks);
-
   return (
     <div className="h-full" onContextMenu={handleRightClick} onClick={closeMenu}>
-      <BreadCrumbs path={path} />
+      <BreadCrumbs ancestorData={ancestorData} />
       <div className="mt-4">
         <Folders folders={folders} />
       </div>
@@ -161,7 +172,5 @@ export default function InFolder({ path }: IInFolder) {
 }
 
 export interface IInFolder {
-  //   folders: IFolderProps[];
-  //   files: IFileProps[];
-  path: string;
+  folderId?: string;
 }

@@ -3,12 +3,17 @@ import { useRouter } from "next/router";
 import { FaSortDown } from "react-icons/fa";
 import { FaGreaterThan } from "react-icons/fa6";
 import base64 from "base-64";
-export default function BreadCrumbs({ path }: IBreadCrumbs) {
+export default function BreadCrumbs({ ancestorData }: IBreadCrumbs) {
   const router = useRouter();
-  const names = path.split("/");
+  const sortFunc = (a: any, b: any) => b.layer - a.layer;
+  if (ancestorData) {
+    ancestorData.sort(sortFunc);
+    ancestorData[0].name = "My Drive";
+  }
+  console.log(ancestorData);
   return (
     <div className="flex -ml-4">
-      {names.map((name, index) => {
+      {ancestorData && ancestorData.map((ancestor: any, index) => {
         return (
           <div className="flex items-center">
             <div
@@ -17,16 +22,14 @@ export default function BreadCrumbs({ path }: IBreadCrumbs) {
                 e.preventDefault();
                 if (index == 0) router.push("/my-drive");
                 else {
-                  const nextPath = names.slice(1, index + 1).join("/");
-                  const encodedPath = base64.encode(nextPath);
-                  router.push(`/folders/${encodedPath}`);
+                  router.push(`/folders/${ancestor._id}`);
                 }
               }}
             >
-              {name}
-              {names.length - 1 == index && <FaSortDown size={20} className="ml-2" />}
+              {ancestor.name}
+              {ancestorData.length - 1 == index && <FaSortDown size={20} className="ml-2" />}
             </div>
-            {!(names.length - 1 == index) && (
+            {!(ancestorData.length - 1 == index) && (
               <FaGreaterThan size={14} className="mt-1 mx-2 font-bold" fontSize={600} />
             )}
           </div>
@@ -37,5 +40,5 @@ export default function BreadCrumbs({ path }: IBreadCrumbs) {
 }
 
 export interface IBreadCrumbs {
-  path: string;
+  ancestorData: any[];
 }

@@ -2,9 +2,13 @@ import Image from "next/image";
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { FaImage } from "react-icons/fa6";
+import { IFileProps } from "./File";
+import { baseURL } from "@/src/apis/axios-base";
 
 export default function ImageFile({ file }: IFileProps) {
   let [isOpen, setIsOpen] = useState(false);
+
+  const url = `${baseURL}/api/media/images/${file._id}`;
 
   function closeModal() {
     setIsOpen(false);
@@ -26,7 +30,7 @@ export default function ImageFile({ file }: IFileProps) {
       </div>
       <div className="w-full aspect-square bg-black rounded-xl " onClick={openModal}>
         <Image
-          src={file.thumbnail}
+          src={url}
           width={500}
           height={500}
           className="w-full h-full rounded-lg object-contain"
@@ -64,7 +68,7 @@ export default function ImageFile({ file }: IFileProps) {
                     <FaImage className="" color="orange" />
                     <p className="ml-2"> {file.name}</p>
                   </div>
-                  <Image src={file.link} alt="" height={2000} width={2000} className="w-auto" />
+                  <Image src={url} alt="" height={2000} width={2000} className="w-auto" />
                 </Dialog.Panel>
               </Transition.Child>
             </div>
@@ -75,14 +79,3 @@ export default function ImageFile({ file }: IFileProps) {
   );
 }
 
-export interface IFileProps {
-  file: IFile;
-}
-
-export interface IFile {
-  type: string;
-  name: string;
-  thumbnail: string;
-  link: string;
-  size: string;
-}

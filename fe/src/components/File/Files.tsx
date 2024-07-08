@@ -7,7 +7,7 @@ export default function Files({ files }: IFilesProps) {
       <p className="font-medium text-gray-600">Files</p>
       <div className="grid grid-cols-9 gap-3 mt-3">
         {files.map((file) => {
-          return <File file={file} />;
+          return <File file={file} key={file._id} />;
         })}
       </div>
     </div>

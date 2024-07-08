@@ -4,7 +4,7 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { MdOutlineEmail } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import DesktopSearch from "../Navbar/DesktopSearch";
-import NavbarRight from "../Navbar/ NavbarRight";
+import NavbarRight from "../Navbar/NavbarRight";
 import DarkMode from "../Navbar/Darkmode";
 
 // export default function Header() {

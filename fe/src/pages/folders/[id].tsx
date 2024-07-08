@@ -8,26 +8,24 @@ import { useEffect, useState } from "react";
 
 export default function Folder() {
   const router = useRouter();
-  const [path, setPath] = useState("");
+  const [folderId, setFolderId] = useState("");
   useEffect(() => {
     try {
-      if (!router.query.path) return;
-      const encodedPath: any = router.query.path;
-      setPath(base64.decode(encodedPath));
+      if (!router.query.id) return;
+      const folderId: any = router.query.id;
+      setFolderId(folderId);
     } catch (error) {
       router.push("/my-drive");
     }
-  }, [router.query.path]);
+  }, [router.query.id]);
 
   return (
     <Layout>
-      {path && (
-        <MenuProvider>
-          <ModalProvider>
-            <InFolder path={`My Drive/${path}`} />
-          </ModalProvider>
-        </MenuProvider>
-      )}
+      <MenuProvider>
+        <ModalProvider>
+          <InFolder folderId={folderId} />
+        </ModalProvider>
+      </MenuProvider>
     </Layout>
   );
 }

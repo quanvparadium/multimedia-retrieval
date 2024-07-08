@@ -1,5 +1,7 @@
 import axios from "axios";
 
+export const baseURL = process.env.NEXT_PUBLIC_BE_URL;
+
 export const axiosWithoutToken = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_BE_URL}`, // Đặt baseURL của API của bạn
 });
