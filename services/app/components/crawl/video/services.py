@@ -2,20 +2,23 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
-from entities import Data, User
+from entities import Video, User
+from .utils import get_seconds
+from dotenv import load_dotenv
+load_dotenv()
 
 from googleapiclient.discovery import build
 import pafy
 import youtube_dl
 
 
-API_KEY = 'AIzaSyCzwXfY7xSBPMjZXTaMhihe_JpucY9AjMk'
-CHANNEL_ID = 'UCRjzfa1E0gA50lvDQipbDMg'
+API_KEY = os.getenv('YOUTUBE_API_KEY')
+DEFAULT_CHANNEL_ID = os.getenv('DEFAULT_CHANNEL_ID')
 
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
-class VideoCrawler:
-    def get_newest_video(maxResults=50, channelId= CHANNEL_ID):
+class VideoYoutubeCrawler:
+    def get_newest_video(maxResults=50, channelId= DEFAULT_CHANNEL_ID):
         # Lấy danh sách video trong kênh
         newest_videos = youtube.search().list(
             part='snippet',
@@ -32,19 +35,20 @@ class VideoCrawler:
     
     def get_video(videoId):
         video = pafy.new(videoId)
-        res = video.getworstvideo().download(filepath=f'./tmp/video/video_{videoId}.mp4', meta=True)
-        print("Video content: ", video)
-        print("result download: ", res)
         return {
-            "video_path": res
+            "author": video.author,
+            "title": video.title,
+            "duration": video.duration,
+            "views": video.viewcount,
+            "thumbnail": video.thumb
         }
 
     @staticmethod        
-    def create_video(videoId):
+    def create_video(videoId, userId):
         video = pafy.new(videoId)
         res = None
         try:
-            res = video.getworstvideo().download(filepath=f'./tmp/video/video_{videoId}.mp4', meta=True)
+            res = video.getworstvideo().download(filepath=f'./tmp/video/vi_{videoId}.mp4', meta=True)
         except Exception as e:
             print(e)
         if res is None:
@@ -55,12 +59,16 @@ class VideoCrawler:
             # video.title
             db = psg_manager.get_session()
             try: 
-                user_id = 1  # Thay thế bằng userId bạn muốn sử dụng
-                user = db.query(User).filter(User.id == user_id).first()
-                db_data = Data(
+                user = db.query(User).filter(User.id == userId).first()
+                db_data = Video(
+                    author=video.author,
+                    format=".mp4",
+                    duration=get_seconds(video.duration),
+                    youtubeId=videoId,
                     type="video", 
                     status="In progress", 
                     userId=user.id, 
+                    crawl=True,
                     fileName=video.title,
                     size=video.length,
                     store="",
@@ -75,7 +83,7 @@ class VideoCrawler:
             finally:
                 db.close()
                 
-            
+    
         
         
             

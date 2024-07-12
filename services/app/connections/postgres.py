@@ -59,7 +59,7 @@
 # psg_db = PostgresConnection()
 
 import os
-from sqlalchemy import create_engine, text, Column, Integer, String, MetaData, Table
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError

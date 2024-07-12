@@ -24,16 +24,27 @@ def status(type: str, id: int):
     }
 
 @preprocessRouter.post('/video/')
-def extract_keyframe(item: VideoItem):
+def extract_keyframe(item: Item):
     print("Processing video ...")
-    result = VideoPreprocessing.extract_keyframe(int(item.id))
+    payload = {
+        "user_id": item.user_id,
+        "type": "video",
+        "file_id": item.file_id, #Mongo definition
+        "file_path": item.file_path, # Actual storage
+        "store": item.store, # Local or S3 Storage
+        "threshold": 0.1
+    }
+    result = VideoPreprocessing.extract_keyframe(payload)
     return result
 
 
 @preprocessRouter.post('/document/')
-def extract_keyframe(item: VideoItem):
+def extract_keyframe(item: Item):
     print("Processing document ...")
-    result = VideoPreprocessing.extract_keyframe(int(item.id))
+    result = {
+        "message": "Document process done!"
+    }
+    # result = DocumentPreprocessing.extract_keyframe(int(item.id))
     return result
 
 # @preprocessRouter.post('/{type}/')

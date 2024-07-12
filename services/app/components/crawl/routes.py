@@ -1,33 +1,33 @@
 from typing import Optional
 from fastapi import APIRouter
-from .video.services import VideoCrawler
+from .video.services import VideoYoutubeCrawler
 from pydantic import BaseModel
 crawlRouter = APIRouter()
 
 # Định nghĩa model cho body
-class Item(BaseModel):
-    id: str
+class ReqBody(BaseModel):
+    userId: int
 
-class VideoCreate(BaseModel):
-    video_path: str
+class DocumentVNBReqBody(ReqBody):
+    url: str
 
-@crawlRouter.get('/')
-async def status(id: Optional[str] = None):
-    print("Id: ", id)
-    if id != None:
-        result = VideoCrawler.get_video(videoId=id)
+class VideoYoutubeReqBody(ReqBody):
+    videoId: str
+    
+
+@crawlRouter.get('/youtube/')
+async def status(req: VideoYoutubeReqBody):
+    print("Id: ", req.videoId)
+    if req.videoId != None:
+        result = VideoYoutubeCrawler.get_video(videoId=req.videoId)
     else: 
-        result = VideoCrawler.get_newest_video()
-    status = "In processing"
-    return {
-        "status": status,
-        "video_path": result
-    }
+        result = VideoYoutubeCrawler.get_newest_video(maxResults=50)
+    return result
 
-@crawlRouter.post('/')
-async def create_video(item: Item):
-    print("ID: ", item.id)
-    res = VideoCrawler.create_video(item.id)
+@crawlRouter.post('/youtube/')
+async def create_video(req: VideoYoutubeReqBody):
+    print("ID: ", req.videoId)
+    res = VideoYoutubeCrawler.create_video(videoId=req.videoId, userId=req.userId)
     print("Output: ", res)
     return {
         "message": "OK"
