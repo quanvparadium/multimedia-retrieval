@@ -166,8 +166,6 @@ class VideoPreprocessing:
             return None
 
     @staticmethod
-
-
     def get_status(id):
         pass
 

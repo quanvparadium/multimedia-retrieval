@@ -9,3 +9,4 @@ LAVIS/
 *.ipynb
 repo/
 tmp/
+old*/

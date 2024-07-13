@@ -26,6 +26,7 @@ def status(type: str, id: int):
 @preprocessRouter.post('/video/')
 def extract_keyframe(item: Item):
     print("Processing video ...")
+    assert item.type == "video", "File must be a video"
     payload = {
         "user_id": item.user_id,
         "type": "video",
@@ -41,6 +42,8 @@ def extract_keyframe(item: Item):
 @preprocessRouter.post('/document/')
 def extract_keyframe(item: Item):
     print("Processing document ...")
+    assert item.type == "document", "File must be a document"
+    
     result = {
         "message": "Document process done!"
     }
