@@ -24,16 +24,24 @@ class VideoSearch:
         try:
             query_vector_str = f"[{','.join(map(str, text_features))}]"
             sql_query = text(f"""
-            SELECT * FROM keyframes
-            WHERE "fileId" = :video_id
-            ORDER BY embedding <-> :query_vector LIMIT :limit;
+                SELECT *, (embedding <=> :query_vector) AS distance
+                FROM keyframes
+                WHERE "fileId" = :video_id
+                ORDER BY distance 
+                LIMIT :limit;
             """)
-            kf_res = db.execute(sql_query, {'video_id': fileId, 'query_vector': query_vector_str, 'limit': limit})
+            kf_res = db.execute(sql_query, {'video_id': fileId, 'query_vector': query_vector_str, 'limit': limit}).fetchall()
             for kf in kf_res:
                 print("Index ", kf.id, "- Address: ", kf.address )
+                print(kf)
+                print("Distance: ", kf.distance)
             if kf_res:
                 print("Return: ", [kf.address for kf in kf_res])
-                return [kf.address for kf in kf_res]
+                
+                return [{
+                    "Address": kf.address,
+                    "Cosine_distance": kf.distance
+                } for kf in kf_res]
             return None
         except Exception as e:
             db.rollback()
@@ -47,9 +55,10 @@ class VideoSearch:
         db = psg_manager.get_session()
         
         sql_query = text("""
-            SELECT * FROM keyframes
+            SELECT *, (embedding <-> :query_vector) AS distance
+            FROM keyframes
             WHERE "fileId" = :video_id
-            ORDER BY embedding <-> :query_vector
+            ORDER BY distance
             LIMIT :limit;
         """)
         
@@ -80,3 +89,4 @@ class VideoSearch:
             db.close()
     
         print("ALL KEYFRAMES: ", all_keyframes)
+        return all_keyframes

@@ -12,14 +12,14 @@ sys.path.append(lavis_dir)
 from lavis.models import load_model_and_preprocess
 
 MODEL_TYPE = "base"
-print("Loading BLIP model ...")
+print("\033[33mLoading BLIP model ...\033[0m")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BLIP_MODEL, BLIP_VIS_PROCESSORS, BLIP_TEXT_PROCESSORS = load_model_and_preprocess("blip_image_text_matching", 
                                                                             MODEL_TYPE, 
                                                                             device=DEVICE, 
                                                                             is_eval=True)
 
-print("Loaded model successful !")
+print("\033[32mLoaded model successfully! \033[0m")
 
 # print("Loading OpenAI Embedding Model ...")
 # print("Loading OpenAI Embedding Model ...")

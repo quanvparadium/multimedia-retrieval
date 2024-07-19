@@ -74,7 +74,6 @@ class PostgresManager:
         self.host = os.getenv('POSTGRES_HOST', 'localhost')
         self.port = os.getenv('POSTGRES_PORT', '5432')
         db_url = f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        print("Connection url: ", db_url)
         self.engine = create_engine(db_url)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
         self.Base = declarative_base()
@@ -89,10 +88,10 @@ class PostgresManager:
             # Thực hiện một truy vấn đơn giản để kiểm tra kết nối
             with self.engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
-            print(f"Connected to Postgres database: {self.database}")
+            print(f"\033[32m>>> Connected to Postgres database: {self.database}\033[0m")
             return True
         except OperationalError as err:
-            print(f"Error connecting to Postgres database: {err}")
+            print(f"\033[31mError connecting to Postgres database: {err}\033[0m")
             return False
 
     def _create_pgvector_extension(self):
@@ -101,7 +100,7 @@ class PostgresManager:
             with self.engine.connect() as connection:
                 connection.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
                 connection.commit()
-            print("pgvector extension is ready.")
+            print("\033[32m>>> Pgvector extension is ready.\033[0m")
         except OperationalError as err:
             print(f"Error creating pgvector extension: {err}")
 

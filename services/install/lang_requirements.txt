@@ -1,0 +1,5 @@
+langchain==0.2.7
+langchain-community
+google-generativeai 
+langchain-google-genai 
+pypdf

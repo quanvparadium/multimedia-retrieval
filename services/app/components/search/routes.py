@@ -26,7 +26,8 @@ def video_search(req: VideoSearchBody):
     if result is None:
         print("Cannot find fileId")
     return {
-        "message": "Search successfully!"
+        "message": "Search successfully!",
+        "Address": result
     } 
     
 @searchRouter.post('/folder/video/')

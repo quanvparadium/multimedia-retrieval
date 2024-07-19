@@ -13,8 +13,7 @@ psycopg2-binary==2.9.9
 pgvector==0.3.0
 git+https://github.com/ytdl-org/youtube-dl.git@master#egg=youtube_dl
 
-langchain==0.2.7
-langchain-community
-google-generativeai 
-langchain-google-genai 
-pypdf
+ffmpeg
+tensorflow==2.15.0
+typing-extensions==4.12.2
+

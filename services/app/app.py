@@ -13,8 +13,8 @@ origins = [
     f"{os.getenv('HOST')}:{os.getenv('FRONTEND_PORT')}",
 ]
 
-from connections.postgres import psg_manager
-psg_manager.create_tables()
+# from connections.postgres import psg_manager
+# psg_manager.create_tables()
 
 app.include_router(router=mainRouter, prefix='/api')
 

@@ -54,27 +54,34 @@ class KeyframeExtractModel:
             db.close()
             
     def _create_index(self, videoId, count):
-        create_index_query = text(f"""
-            CREATE INDEX IF NOT EXISTS flat_idx 
-            ON keyframes ((embedding::vector(256)) vector_cosine_ops) 
-            WHERE (keyframes.fileId = {videoId});
-        """)
+        # create_index_query = text(f"""
+        #     CREATE INDEX IF NOT EXISTS flat_idx 
+        #     ON keyframes ((embedding::vector(256)) vector_cosine_ops) 
+        #     WHERE (keyframes.\"fileId\" = :video_id);
+        # """)
+        can_be_index = False
         if (count > 10000) and (count < 100000):
             create_index_query = text(f"""
                 CREATE INDEX IF NOT EXISTS ivflat_idx 
-                ON keyframes USING ivflat ((embedding::vector(256)) vector_cosine_ops) 
+                ON keyframes USING ivfflat ((embedding::vector(256)) vector_cosine_ops) 
                 WITH (lists = 100) 
-                WHERE (keyframes.fileId = {videoId});
+                WHERE (keyframes.\"fileId\" = :video_id);
             """) 
-        else:
+            can_be_index = True
+        elif (count >= 100000):
             create_index_query = text(f"""
                 CREATE INDEX IF NOT EXISTS ivflat_idx 
-                ON keyframes USING ivflat ((embedding::vector(256)) vector_cosine_ops) 
+                ON keyframes USING ivfflat ((embedding::vector(256)) vector_cosine_ops) 
                 WITH (lists = 1000) 
-                WHERE (keyframes.fileId = {videoId});
-            """) 
-        db_res = psg_manager.execute_query(create_index_query)
-        print("Db result create index: ", db_res)
+                WHERE (keyframes.\"fileId\" = :video_id);
+            """)
+            can_be_index = True
+        if can_be_index:   
+            print("CREATE INDEX QUERY HERE: \n", create_index_query)
+            db_res = psg_manager.get_session().execute(create_index_query, {"video_id": str(videoId)})
+            print("Db result create index: ", db_res)
+        else:
+            print("The number of keyframe is too small to create index")
         
             
     # def query_vector(self, videoId, query: str, limit: int = 10): 

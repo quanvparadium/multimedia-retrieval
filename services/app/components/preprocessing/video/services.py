@@ -146,7 +146,7 @@ class VideoPreprocessing:
             db.close()
 
     @staticmethod
-    def get_video_properties(video_path):
+    def get_video_properties(video_path: str):
         try:
             probe = ffmpeg.probe(video_path)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)

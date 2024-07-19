@@ -10,3 +10,4 @@ LAVIS/
 repo/
 tmp/
 old*/
+venv/

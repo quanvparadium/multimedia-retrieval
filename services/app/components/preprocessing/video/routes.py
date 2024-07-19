@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from .video.services import VideoPreprocessing
-from .schemas import VideoItem, DocumentItem, Item
-preprocessRouter = APIRouter()
+from .services import VideoPreprocessing
+# from ..schemas import VideoItem, DocumentItem, Item
+videoPreprocessRouter = APIRouter()
 
 import os
 import sys
@@ -11,20 +11,26 @@ video_dir = os.path.join(current_dir, '..', 'tmp', 'video')
 sys.path.append(video_dir)
 
 
+from pydantic import BaseModel
+class VideoItem(BaseModel):
+    user_id: str
+    store: str
+    type: str
+    file_path: str
+    file_id: str
+    
 
-@preprocessRouter.get('/{type}/{id}')
-def status(type: str, id: int):
-    assert type in ["video", "document", "image"], "Type must be in (Video, Document, Image)" 
-    if type == "video":
-        property = VideoPreprocessing.get_video_properties(id)
-        print("Preprocessing result: ", property)
-    status = "In processing"
-    return {
-        "status": status
-    }
+# @videoPreprocessRouter.get('/{keyframeId}/')
+# def status(keyframeId: str):
+#     property = VideoPreprocessing.get_video_properties(keyframeId)
+#     print("Preprocessing result: ", property)
+#     status = "In processing"
+#     return {
+#         "status": status
+#     }
 
-@preprocessRouter.post('/video/')
-def extract_keyframe(item: Item):
+@videoPreprocessRouter.post('/')
+def extract_keyframe(item: VideoItem):
     print("Processing video ...")
     assert item.type == "video", "File must be a video"
     payload = {
@@ -39,18 +45,9 @@ def extract_keyframe(item: Item):
     return result
 
 
-@preprocessRouter.post('/document/')
-def extract_keyframe(item: Item):
-    print("Processing document ...")
-    assert item.type == "document", "File must be a document"
-    
-    result = {
-        "message": "Document process done!"
-    }
-    # result = DocumentPreprocessing.extract_keyframe(int(item.id))
-    return result
 
-# @preprocessRouter.post('/{type}/')
+
+# @videoPreprocessRouter.post('/{type}/')
 # def extract(type: str, item: Union[VideoItem, DocumentItem]):
 #     print("Preprocessing here")
 #     result = None
@@ -71,5 +68,5 @@ def extract_keyframe(item: Item):
 #         # "shape": result['shape']
 #     }
     
-# @preprocessRouter.post('/{videoId}')
+# @videoPreprocessRouter.post('/{videoId}')
 # def xx

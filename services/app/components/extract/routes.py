@@ -14,7 +14,6 @@ from .video.services import kf_extract
 class KeyframeReqBody(BaseModel):
     userId: int
     fileId: str 
-    
 
 
 extractRouter = APIRouter()
