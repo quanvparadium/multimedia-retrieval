@@ -1,183 +1,166 @@
-import { AppError } from '~/errors/app-error';
-import { UserService } from '../user/user.service';
-import { getValueAtPath } from '~/helpers/folder';
+import { Types } from "mongoose";
+import { IFileSystemType, IFileSystemWithLayer, IMetaData } from "./file-system";
+import { FileSystemModel } from "./file-system.model";
+import { AppError } from "~/errors/app-error";
 
 export default class FileSystemService {
-    private userService: UserService;
+    constructor() { }
 
-    constructor() {
-        this.userService = new UserService();
-    }
+    async create(fileSystemArgs: IFileSystemArgs) {
+        let { name, type, userId, parentId, metaData } = fileSystemArgs;
+        const isOwner = await this.isOwner(parentId, userId);
+        if (!isOwner) throw new AppError(`User ${userId} cannot create child from parentId ${parentId}`, 403);
 
-    public async createFolder(args: ICreateFolder) {
-        const { userId, path, folderName } = args;
-        const folderPathInMongo = this.convertPathToPathInMongo(path);
-        //1. Check type of path
-        const pathType = await this.getTypeOfPath(userId, folderPathInMongo);
-        if (pathType != 'folder') throw new AppError(`Path ${path} is not folder`, 400);
-        //2. Add folder with value = {}
-        const newFolderPath = `${folderPathInMongo}.${folderName}`;
-        await this.addNewFileSystem(userId, newFolderPath, {});
-    }
+        const siblings = await this.findDescendant(parentId, 1);
+        const isExist = siblings.findIndex((sibling) => sibling.name == name && sibling.layer == 1) >= 0;
+        if (isExist) throw new AppError(`Duplicate name at the same folder in folder ${parentId}`, 409);
 
-    public async createFile(args: ICreateFile) {
-        const { userId, path, fileName, fileId } = args;
-        const folderPathInMongo = this.convertPathToPathInMongo(path);
-        //1. Check type of path
-        const pathType = await this.getTypeOfPath(userId, folderPathInMongo);
-        if (pathType != 'folder') throw new AppError(`Path ${path} is not folder`, 400);
-        //2. Add file with value = fileId
-        const newFilePath = `${folderPathInMongo}.${fileName}`;
-        await this.addNewFileSystem(userId, newFilePath, fileId);
-    }
+        const newFileSystem = new FileSystemModel({
+            name,
+            userId,
+            type,
+            childrenIds: [],
+            parentId: parentId,
+            metaData
+        });
 
-    public async getFileSystemOfFolder(userId: number, path: string) {
-        const folderPathInMongo = this.convertPathToPathInMongo(path);
-        const userCollection = this.userService.collection;
-        const pathType = await this.getTypeOfPath(userId, folderPathInMongo);
-        if (pathType != 'folder')
-            throw new AppError('Type of path is file, so you need to try another path', 400);
-        //1. Get folders in folder
-        const folderCursor = userCollection.aggregate([
-            {
-                $match: {
-                    id: userId
-                }
-            },
-            {
-                $project: {
-                    [folderPathInMongo]: 1
-                }
-            },
-            {
-                $addFields: {
-                    dir: { $objectToArray: `$${folderPathInMongo}` }
-                }
-            },
-            {
-                $unwind: '$dir'
-            },
-            {
-                $match: {
-                    'dir.v': { $type: 'object' }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    name: '$dir.k'
-                }
-            }
-        ]);
-
-        folderCursor.map((doc) => doc);
-        const folders = await folderCursor.toArray();
-        //2. Get files in folder
-        const fileCursor = userCollection.aggregate([
-            {
-                $match: {
-                    id: userId
-                }
-            },
-            {
-                $project: {
-                    [folderPathInMongo]: 1
-                }
-            },
-            {
-                $addFields: {
-                    dir: { $objectToArray: `$${folderPathInMongo}` }
-                }
-            },
-            {
-                $unwind: '$dir'
-            },
-            {
-                $match: {
-                    'dir.v': { $type: ['string', 'number'] }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    name: '$dir.k',
-                    value: '$dir.v'
-                }
-            }
-        ]);
-        fileCursor.map((doc) => doc);
-        const files = await fileCursor.toArray();
-        return { folders, files };
-    }
-
-    public async renameFileOrFolder(userId: number, path: string, newName: string) {
-        const oldPathInMongo = this.convertPathToPathInMongo(path);
-        const userCollection = this.userService.collection;
-        await this.getTypeOfPath(userId, oldPathInMongo);
-        let newArrPath = path.split('/');
-        const newPath = newArrPath.splice(-1, 1, newName).join('/');
-        const newPathInMongo = this.convertPathToPathInMongo(newPath);
-        await userCollection.updateOne(
-            { id: userId }, // Specify the document to update
-            { $rename: { 'folder.f.f': 'folder.c' } } // Use $rename to rename the field
+        await newFileSystem.save();
+        await FileSystemModel.updateOne(
+            { _id: parentId },
+            { $addToSet: { childrenIds: newFileSystem._id } }
         );
+        return newFileSystem;
     }
 
-    private convertPathToPathInMongo(path: string) {
-        const pathToFolder = path
-            .split('/')
-            .filter((unit: string) => unit != '')
-            .map((unit: string) => `.${unit}`)
-            .join('');
-        const folderPathInMongo = `folder${pathToFolder}`;
-        return folderPathInMongo;
+    async createRoot(userId: string | number) {
+        const isCreateBefore = await FileSystemModel.findOne({
+            userId
+        });
+        if (isCreateBefore) throw new Error(`Cannot create folder root for user ${userId}`);
+
+        const newFileSystem = new FileSystemModel({
+            userId,
+            name: 'root',
+            type: 'folder',
+            childrenIds: [],
+            parentId: null,
+        });
+        await newFileSystem.save();
     }
 
-    private async findCollectionWithPath(userId: number, pathInMongo: string) {
-        const userCollection = this.userService.collection;
-        return await userCollection.findOne(
-            {
-                id: userId,
-                [pathInMongo]: { $exists: true }
+    async getFileSystem(id: string) {
+        return await FileSystemModel.findById(id);
+    }
+
+
+    async getInfoFolder(id: string) {
+        const ancestorData = await this.findAncestor(id);
+        const childrenData = await this.findDescendant(id, 0);
+        return { ancestorData, childrenData };
+    }
+
+    async getIdRootFolder(userId: string | number) {
+        const rootFolder: any = await FileSystemModel.findOne({
+            parentId: null,
+            userId
+        });
+        const id = rootFolder._id;
+        return id;
+    }
+
+
+    // user,videos, embedding
+    async findDescendant(id: string, maxDepth: number = 10) {
+        const res = await FileSystemModel.aggregate([{
+            $match: {
+                _id: new Types.ObjectId(id),
             },
-            {
-                projection: {
-                    [pathInMongo]: 1
-                }
+        },
+        {
+            $graphLookup: {
+                from: "filesystems",
+                startWith: "$childrenIds",
+                connectFromField: "childrenIds",
+                connectToField: "_id",
+                depthField: "layer",
+                maxDepth,
+                as: "descendantData"
             }
-        );
+        }]);
+        if (res.length == 0) throw new Error(`Cannot find FileSystem with id ${id}`);
+        const data: IFileSystemWithLayer[] = res[0].descendantData;
+        return data;
     }
 
-    private async getTypeOfPath(userId: number, path: string) {
-        const collection = await this.findCollectionWithPath(userId, path);
-        if (!collection) throw new AppError(`Path ${path} cannot found`, 404);
-        return typeof getValueAtPath(collection, path) == 'object' ? 'folder' : 'file';
+    async findAncestor(id: string, maxDepth: number = 10) {
+        const res = await FileSystemModel.aggregate([{
+            $match: {
+                _id: new Types.ObjectId(id),
+            },
+        },
+        {
+            $graphLookup: {
+                from: "filesystems",
+                startWith: "$_id",
+                connectFromField: "parentId",
+                connectToField: "_id",
+                depthField: "layer",
+                maxDepth: maxDepth,
+                as: "ancestorData"
+            }
+        }]);
+
+        if (res.length == 0) throw new Error(`Cannot find FileSystem with id ${id}`);
+        const data: IFileSystemWithLayer[] = res[0].ancestorData;
+        return data;
     }
 
-    private async addNewFileSystem(userId: number, path: string, value: any) {
-        const collectionWithNewFolder = await this.findCollectionWithPath(userId, path);
-        const userCollection = this.userService.collection;
-        if (collectionWithNewFolder) throw new AppError(`Path ${path} is exist before`, 400);
-        await userCollection.updateOne(
-            { id: userId },
-            {
-                $set: {
-                    [path]: value
-                }
-            }
-        );
+    async isOwner(id: string, userId: string | number) {
+        try {
+            const fileSystem = await this.getFileSystem(id);
+            if (!fileSystem) return false;
+            if (fileSystem.userId == userId) return true;
+            else return false;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async setOpenedAt(id: string) {
+        await FileSystemModel.findByIdAndUpdate(id, { $set: { openedAt: new Date() } });
+    }
+
+    async getRecentOpenedAt(userId: string, type: string) {
+        const fileSystems = await FileSystemModel.find({ type, userId }).sort({ openedAt: -1 }).limit(30);
+        return fileSystems;
+    }
+
+    async rename(id: string, newName: string) {
+        const fileSystem: any = await this.getFileSystem(id);
+        const parentId = fileSystem.parentId;
+        const siblings = await this.findDescendant(parentId, 1);
+        const isExist = siblings.findIndex((sibling) => sibling.name == newName) >= 0;
+        if (isExist) throw new Error(`Duplicate name at the same folder in folder ${parentId}`);
+        await FileSystemModel.findByIdAndUpdate(id, {
+            name: newName
+        });
+    }
+
+
+    async move(id: string, preParentId: string, nextParentId: string) {
+
+    }
+
+    async delete(id: string) {
+
     }
 }
 
-interface ICreateFolder {
-    userId: number;
-    path: string;
-    folderName: string;
+interface IFileSystemArgs {
+    parentId: string;
+    userId: string | number;
+    name: string;
+    type: IFileSystemType;
+    metaData?: IMetaData;
 }
 
-interface ICreateFile {
-    userId: number;
-    path: string;
-    fileName: string;
-    fileId: number;
-}

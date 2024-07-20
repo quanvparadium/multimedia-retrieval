@@ -1,6 +1,5 @@
 import { IoMdSearch } from "react-icons/io";
 import DropdownMenu from "./Menu/DropdownMenu";
-import DarkMode from "./Darkmode";
 
 export default function NavbarRight() {
   return (
@@ -12,8 +11,6 @@ export default function NavbarRight() {
         <IoMdSearch size={23} className="" />
       </button>
       {/* CSS responsive sau cho button này */}
-      <DarkMode />
-
       <div className="items-center hidden space-x-3 md:flex">
         <DropdownMenu />
       </div>

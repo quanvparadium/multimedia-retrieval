@@ -1,0 +1,1 @@
+export const UPLOAD_THUMBNAIL_DIR = 'store/thumbnails';

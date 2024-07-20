@@ -8,7 +8,7 @@ export class CreateUserDto {
     @IsString()
     password: string;
 
-    @Length(6, 20, { message: 'Name must be between 2 and 20 chars' })
+    @Length(2, 20, { message: 'Name must be between 2 and 20 chars' })
     @IsString()
     name: string;
 }

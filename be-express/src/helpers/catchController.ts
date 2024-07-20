@@ -4,10 +4,10 @@ type IControllerFunction = (
     req: Request,
     res: Response,
     next: NextFunction
-) => Promise<void>;
+) => Promise<any>;
 
 export const catchCtrl =
     (fn: IControllerFunction) =>
-    (req: Request, res: Response, next: NextFunction) => {
-        fn(req, res, next).catch(next);
-    };
+        (req: Request, res: Response, next: NextFunction) => {
+            fn(req, res, next).catch(next);
+        };

@@ -1,6 +1,51 @@
+import { authApi } from "@/src/apis/auth/auth.api";
+import { userApi } from "@/src/apis/user/user.api";
+import { useAppDispatch, useAppSelector } from "@/src/store/store";
+import { getUser, setUser } from "@/src/store/user/userSlice";
 import Image from "next/image";
+import { useRouter } from "next/router";
+import { FormEventHandler, useEffect, useState } from "react";
 
 export default function Login() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  useEffect(() => {
+    const getMySelf = async () => {
+      try {
+        const data: any = await userApi.getMe();
+        dispatch(setUser(data.user));
+        router.push("/");
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    getMySelf();
+  }, []);
+
+  const handleChange = (event: React.ChangeEvent<HTMLFormElement>) => {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      const data: any = await authApi.login(formData);
+      if (data.tokens) {
+        localStorage.setItem("accessToken", data.tokens.accessToken);
+        localStorage.setItem("refreshToken", data.tokens.refreshToken);
+      }
+      router.push("/");
+    } catch (err) {
+      console.log(err);
+    }
+  };
   return (
     <div className="bg-red-200">
       <section className="bg-gray-50  ">
@@ -12,9 +57,14 @@ export default function Login() {
           <div className="w-full bg-white rounded-lg shadow  md:mt-0 sm:max-w-md xl:p-0 ">
             <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
               <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl ">
-                Sign in to your account
+                Sign In to your account
               </h1>
-              <form className="space-y-4 md:space-y-6" action="#">
+              <form
+                className="space-y-4 md:space-y-6"
+                action="#"
+                onSubmit={handleSubmit}
+                onChange={handleChange}
+              >
                 <div>
                   <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 ">
                     Your email
@@ -42,22 +92,7 @@ export default function Login() {
                     className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 "
                   />
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        id="remember"
-                        aria-describedby="remember"
-                        type="checkbox"
-                        className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 "
-                      />
-                    </div>
-                    <div className="ml-3 text-sm">
-                      <label htmlFor="remember" className="text-gray-500 ">
-                        Remember me
-                      </label>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-end">
                   <a href="#" className="text-sm font-medium text-primary-600 hover:underline ">
                     Forgot password?
                   </a>
@@ -66,11 +101,11 @@ export default function Login() {
                   type="submit"
                   className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center "
                 >
-                  Sign in
+                  Sign In
                 </button>
                 <p className="text-sm font-light text-gray-500 ">
                   Don’t have an account yet?{" "}
-                  <a href="#" className="font-medium text-primary-600 hover:underline ">
+                  <a href="/signup" className="font-medium text-primary-600 hover:underline ">
                     Sign up
                   </a>
                 </p>

@@ -1,16 +1,14 @@
 import { DeepPartial, Repository } from 'typeorm';
-import mongoDB from '~/connections/mongo';
 import postgresDB from '~/connections/postgres';
 import { User } from '~/entities/user.entity';
-import { UserInMongo } from './user-mongo';
-import { Collection } from 'mongodb';
+import FileSystemService from '../file-system/file-system.service';
 
 export class UserService {
     private userRepo: Repository<User>;
-    private userCollection: Collection<UserInMongo>;
+    private fileSystemService: FileSystemService;
     constructor() {
         this.userRepo = postgresDB.getRepo(User);
-        this.userCollection = mongoDB.getCollection<UserInMongo>('user');
+        this.fileSystemService = new FileSystemService();
     }
 
     async create(data: DeepPartial<User>) {
@@ -18,12 +16,8 @@ export class UserService {
         return await this.userRepo.save(user);
     }
 
-    async createInMongo(id: number) {
-        const data = await this.userCollection.insertOne({
-            id,
-            folder: {}
-        });
-        console.log(data);
+    async createRootFolderInMongo(id: number) {
+        await this.fileSystemService.createRoot(id);
     }
 
     async isExistUser(email: string | undefined) {
@@ -40,7 +34,5 @@ export class UserService {
         return this.userRepo;
     }
 
-    get collection() {
-        return this.userCollection;
-    }
+
 }

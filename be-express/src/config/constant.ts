@@ -13,10 +13,13 @@ export const HTTPSTATUS = {
     NOT_FOUND: 404,
     UNPROCESSABLE_ENTITY: 422,
     INTERNAL_SERVER_ERROR: 500
-} as const
+} as const;
 
-export const UPLOAD_IMAGE_DIR = 'uploads/images'
-export const UPLOAD_IMAGE_TEMP = 'uploads/images/temp'
+export const UPLOAD_IMAGE_DIR = 'uploads/images';
+export const UPLOAD_IMAGE_TEMP = 'uploads/images/temp';
 
-export const UPLOAD_VIDEO_DIR = 'uploads/videos'
-export const UPLOAD_VIDEO_TEMP = 'uploads/videos/temp'
+export const UPLOAD_VIDEO_DIR = 'uploads/videos';
+export const UPLOAD_VIDEO_TEMP = 'uploads/videos/temp';
+
+export const UPLOAD_STORE_DIR = 'store/uploads';
+export const UPLOAD_TEMP_DIR = 'store/temp';

@@ -1,13 +1,12 @@
-import express, { Request, Response } from 'express'
+import express, { Request, Response } from 'express';
 import { catchCtrl } from '~/helpers/catchController';
 import { identify } from '../auth/auth.middleware';
-import { uploadImage, uploadVideo } from './upload.controller';
+import { upload } from './upload.controller';
+import { formDataMiddleware } from './upload.middleware';
 
-const uploadRoutes = express.Router()
+const uploadRoutes = express.Router();
+uploadRoutes.route('/:folderId').post(catchCtrl(identify), catchCtrl(formDataMiddleware), catchCtrl(upload));
 
-uploadRoutes.post('/images', catchCtrl(identify), catchCtrl(uploadImage))
+// uploadRoutes.post('/videos', catchCtrl(identify), catchCtrl(uploadVideo));
 
-uploadRoutes.post('/videos', catchCtrl(identify), catchCtrl(uploadVideo))
-
-
-export default uploadRoutes
+export default uploadRoutes;

@@ -33,9 +33,8 @@ export const signUp = async (req: Request, res: Response, next: NextFunction) =>
         password: await hash(dtoUser.password, 10)
     };
     const createdUser = await userService.create(newUser);
-    //4. Also add user in mongoDB
-    await userService.createInMongo(createdUser.id);
-
+    //4. Also add root folder in mongoDB
+    await userService.createRootFolderInMongo(createdUser.id);
     res.status(200).json({
         message: 'Create user successfully'
     });
@@ -57,7 +56,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             email: dtoUser.email
         }
     });
-    if (!user) throw new AppError(`User with email ${dtoUser.email} is not exist`, 400);
+    if (!user) throw new AppError(`User with email ${dtoUser.email} is not exist`, 404);
     const isCorrectPassword = await compare(dtoUser.password, user.password);
     if (!isCorrectPassword)
         throw new AppError(`User with email ${dtoUser.email} input wrong password`, 400);

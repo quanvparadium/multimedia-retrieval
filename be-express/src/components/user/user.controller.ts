@@ -13,6 +13,6 @@ export const getDataUser = async (req: Request, res: Response, next: NextFunctio
     if (!user) throw new AppError(`User with this token is not exist`, 400);
     const data = { ...user, password: undefined };
     res.status(200).json({
-        data
+        user: data
     });
 };
