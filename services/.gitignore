@@ -1,7 +1,13 @@
 .env
-.DS_Store
+*DS_Store
 .git
 __pycache__/
 features/
-Database/
+Database*
 LAVIS/
+*.mp4
+*.ipynb
+repo/
+tmp/
+old*/
+venv/

@@ -1,0 +1,7 @@
+version: '1.0.0'
+services:
+    search:
+        platform: linux/amd64
+        build:
+            dockerfile: ./Dockerfile
+            context: .
