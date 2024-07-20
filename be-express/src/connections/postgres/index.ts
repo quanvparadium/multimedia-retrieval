@@ -16,7 +16,7 @@ const postgresDB = new PostgresDB({
     database: POSTGRES_DB,
     entities: ['src/entities/*.{ts,js}'],
     logging: true,
-    synchronize: true
+    synchronize: false
 });
 
 export default postgresDB;

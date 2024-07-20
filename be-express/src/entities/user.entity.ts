@@ -3,9 +3,13 @@ import {
     PrimaryGeneratedColumn,
     Column,
     OneToMany,
-    UpdateDateColumn
+    UpdateDateColumn,
+    OneToOne
 } from 'typeorm';
 import { Data } from './data.entity';
+import { Subscribe } from './subscribe.entity';
+import { Transaction } from './transaction.entity';
+import { QueryHistory } from './query-history.entity';
 
 @Entity()
 export class User {
@@ -26,6 +30,15 @@ export class User {
 
     @OneToMany(() => Data, (data) => data.user)
     data: Data[];
+
+    @OneToOne(() => Subscribe, (subscribe) => subscribe.user)
+    subscription: Subscribe;
+
+    @OneToMany(() => Transaction, (transaction) => transaction.user)
+    transactions: Transaction[];
+
+    @OneToMany(() => QueryHistory, (queryHistory) => queryHistory.user)
+    queryHistories: QueryHistory[];
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;

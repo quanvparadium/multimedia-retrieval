@@ -1,10 +1,10 @@
 import Image from "next/image";
-import { IoMdSearch} from "react-icons/io";
+import { IoMdSearch } from "react-icons/io";
 import { IoSettingsOutline } from "react-icons/io5";
 import { MdOutlineEmail } from "react-icons/md";
 import Navbar from "../Navbar/Navbar";
 import DesktopSearch from "../Navbar/DesktopSearch";
-import NavbarRight from "../Navbar/ NavbarRight";
+import NavbarRight from "../Navbar/NavbarRight";
 import DarkMode from "../Navbar/Darkmode";
 
 // export default function Header() {
@@ -34,17 +34,17 @@ import DarkMode from "../Navbar/Darkmode";
 // }
 
 export default function Header() {
-    return (
-        <header className="flex-shrink-0 border-b bg-sky-50">
-            <div className="flex items-center justify-between p-2">
-                <Navbar/>
+  return (
+    <header className="flex-shrink-0 border-b bg-sky-50">
+      <div className="flex items-center justify-between p-2">
+        <Navbar />
 
-                {/* <MobileSearch/> */}
+        {/* <MobileSearch/> */}
 
-                <DesktopSearch/>
+        {/* <DesktopSearch /> */}
 
-                <NavbarRight/>
-            </div>
-        </header>
-    )
+        <NavbarRight />
+      </div>
+    </header>
+  );
 }

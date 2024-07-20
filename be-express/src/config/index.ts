@@ -17,4 +17,5 @@ export const MONGO_USER = process.env.MONGO_INITDB_ROOT_USERNAME;
 export const MONGO_PASSWORD = process.env.MONGO_INITDB_ROOT_PASSWORD;
 export const MONGO_HOST = process.env.MONGO_HOST;
 export const MONGO_PORT = process.env.MONGO_PORT;
-export const MONGO_DATABASE = process.env.MONGO_DATABASE;
+export const MONGO_DATABASE = process.env.MONGO_DATABASE || '';
+export const MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}`;
