@@ -7,6 +7,7 @@ export interface IMetaData {
     location?: string,
     size?: number,
     mimetype?: string | null;
+    thumbNailId?: mongoose.Types.ObjectId;
 }
 
 export interface IFileSystem extends Document {
@@ -16,6 +17,7 @@ export interface IFileSystem extends Document {
     name: string;
     createdAt: Date;
     updatedAt: Date;
+    openedAt: Data;
     userId: mongoose.Types.ObjectId;
     metaData?: IMetaData;
 }

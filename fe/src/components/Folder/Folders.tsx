@@ -7,7 +7,6 @@ export default function Folders({ folders }: IFoldersProps) {
   if (!folders?.length) return;
   return (
     <div className="">
-      <p className="font-medium text-gray-600">Folders</p>
       <div className="grid grid-cols-9 gap-3 mt-3">
         {folders.map((folder) => {
           return <Folder folder={folder} key={folder._id} />;

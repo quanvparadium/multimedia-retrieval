@@ -41,7 +41,7 @@ export default function Header() {
 
         {/* <MobileSearch/> */}
 
-        <DesktopSearch />
+        {/* <DesktopSearch /> */}
 
         <NavbarRight />
       </div>

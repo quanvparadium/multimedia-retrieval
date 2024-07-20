@@ -39,3 +39,14 @@ export const getRootFileSystem = async (req: Request, res: Response, next: NextF
         data: id
     });
 };
+
+export const getRecentFileSystems = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const { type }: any = req.query;
+    const fileSystems = await fileSystemService.getRecentOpenedAt(userId, type);
+    res.status(200).json({
+        data: fileSystems
+    });
+};

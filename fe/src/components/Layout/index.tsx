@@ -30,7 +30,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
   }, []);
   return (
     <div className="antialiased text-gray-900 bg-white">
-      <div className="flex min-h-screen overflow-y-hidden bg-white">
+      <div className="flex max-h-screen min-h-screen overflow-y-hidden bg-white">
         <SidebarProvider>
           <SidebarBackdrop />
           <CustomSidebar />
@@ -39,7 +39,7 @@ export default function Layout({ children }: LayoutProps): JSX.Element {
               <Header />
             </HeaderProvider>
 
-            <div className="p-4 bg-white h-full">{children}</div>
+            <div className="p-4 bg-white h-full overflow-scroll overflow-x-hidden">{children}</div>
 
             {/* Include footer partial here */}
           </div>

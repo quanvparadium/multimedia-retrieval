@@ -9,6 +9,7 @@ import { ModalContext } from "@/src/screens/InFolder/ModalProvider";
 import base64 from "base-64";
 import { useRouter } from "next/router";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
+import { logApi } from "@/src/apis/log/log.api";
 
 export default function Folder({ folder }: IFolderProps) {
   const router = useRouter();
@@ -82,6 +83,7 @@ export default function Folder({ folder }: IFolderProps) {
       onContextMenu={handleRightClick}
       className="flex text-gray-600 bg-slate-100 hover:bg-slate-200 py-3 px-5 items-center rounded-xl cursor-pointer font-medium"
       onDoubleClick={() => {
+        logApi.upload('open', { fileSystemId: folder._id });
         router.push(`/folders/${folder._id}`);
       }}
     >

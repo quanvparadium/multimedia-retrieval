@@ -1,10 +1,14 @@
 import express from 'express';
 import { catchCtrl } from '~/helpers/catchController';
 import { identify } from '../auth/auth.middleware';
-import { createFolder, getFileSystem, getRootFileSystem } from './file-system.controller';
+import { createFolder, getFileSystem, getRecentFileSystems, getRootFileSystem } from './file-system.controller';
 
 const folderRoutes = express.Router();
 //what we need to do. 
+
+folderRoutes.route('/recent').get(catchCtrl(identify), catchCtrl(getRecentFileSystems));
+
+
 folderRoutes
     .route('/')
     .post(catchCtrl(identify), catchCtrl(createFolder))

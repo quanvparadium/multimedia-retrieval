@@ -1,28 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
-import uploadService from './upload.service';
 import { AppError } from '~/errors/app-error';
-import { Fields, Files } from 'formidable';
+import { Files } from 'formidable';
 import FileSystemService from '../file-system/file-system.service';
 import generateUniqueName from './helpers/generateNames';
 import { IMetaData } from '../file-system/file-system';
 import { UPLOAD_STORE_DIR } from '~/config/constant';
 import { moveFile } from '~/helpers/file';
+import ThumbnailService from '../thumbnail/thumbnail.service';
 
-export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
-    const url = await uploadService.uploadImage(req as any);
-    res.json({
-        message: 'Upload image(s) successfully',
-        result: url
-    });
-};
-
-export const uploadVideo = async (req: Request, res: Response, next: NextFunction) => {
-    const url = await uploadService.uploadVideo(req as any);
-    res.json({
-        message: 'Upload video successfully',
-        result: url
-    });
-};
+const thumbNailService = new ThumbnailService();
 
 export const upload = async (req: Request, res: Response, next: NextFunction) => {
     // get file, check name file, move file to, 
@@ -39,12 +25,14 @@ export const upload = async (req: Request, res: Response, next: NextFunction) =>
         for (const blob of files.blobs) {
             const fileName = generateUniqueName(blob.originalFilename ?? "", siblingNames);
             if (!blob.mimetype) continue;
-            const [_, ext] = blob.mimetype.split('/');
+            const [kind, ext] = blob.mimetype.split('/');
+            const thumbNailId = await thumbNailService.createThumbNail(blob.filepath, kind);
             const metaData: IMetaData = {
                 size: blob.size,
                 mimetype: blob.mimetype,
                 storage: 'local',
-                location: UPLOAD_STORE_DIR
+                location: UPLOAD_STORE_DIR,
+                thumbNailId,
             };
             const newFileSystem = await fileSystemService.create({ name: fileName, type: 'file', parentId: folderId, userId, metaData });
             // Save file to this place

@@ -2,7 +2,7 @@ import ImageFile from "./ImageFile";
 import VideoFile from "./VideoFile";
 
 export default function File({ file }: IFileProps) {
-  if (!file.metaData.mimetype) return;
+  if (!file?.metaData?.mimetype) return;
   const type = file.metaData.mimetype.split('/')[0];
   if (type == "video") return <VideoFile file={file} />;
   if (type == "image") return <ImageFile file={file} />;
@@ -27,4 +27,5 @@ interface IMetaData {
   location?: string,
   size?: number,
   mimetype?: string | null;
+  thumbNailId: string;
 }

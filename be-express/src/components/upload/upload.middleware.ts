@@ -8,9 +8,9 @@ export const formDataMiddleware = async (req: Request, res: Response, next: Next
     const userId = req.userId;
     const form = formidable({
         uploadDir: path.resolve(UPLOAD_TEMP_DIR),
-        maxFiles: 100,
-        maxFileSize: 100 * 1024 * 1024, // 1 MB
-        maxTotalFileSize: 150 * 1024 * 1024, // 100 MB
+        maxFiles: 10,
+        maxFileSize: 1024 * 1024 * 1024, // 1 GB
+        maxTotalFileSize: 10 * 1024 * 1024 * 1024, // 100 MB
         keepExtensions: true,
         createDirsFromUploads: true,
         filename: (name, ext, part) => {
@@ -31,7 +31,7 @@ export const formDataMiddleware = async (req: Request, res: Response, next: Next
         }
     });
 
-    const { fields, files }: { files: Files; fields: Fields } = await new Promise(
+    const { fields, files }: { files: Files; fields: Fields; } = await new Promise(
         (resolve, reject) => {
             form.parse(req, (err, fields, files) => {
                 if (err) {

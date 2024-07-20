@@ -3,16 +3,24 @@ import { Fragment, useState } from "react";
 import { RiFolderVideoFill } from "react-icons/ri";
 import { Dialog, Transition } from "@headlessui/react";
 import { IFileProps } from "./File";
+import { baseURL } from "@/src/apis/axios-base";
+import { logApi } from "@/src/apis/log/log.api";
 
 export default function VideoFile({ file }: IFileProps) {
   let [isOpen, setIsOpen] = useState(false);
-
+  console.log(1);
   function closeModal() {
     setIsOpen(false);
   }
   function openModal() {
+    logApi.upload('open', { fileSystemId: file._id });
     setIsOpen(true);
   }
+  const url = `${baseURL}/api/media/videos/${file._id}`;
+  const thumbNailId = file.metaData.thumbNailId;
+  let urlThumbNail;
+  if (thumbNailId) urlThumbNail = `${baseURL}/api/thumbnails/${file.metaData.thumbNailId}`;
+
 
   return (
     <div
@@ -26,13 +34,15 @@ export default function VideoFile({ file }: IFileProps) {
         <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
       </div>
       <div className="w-full aspect-square bg-black rounded-xl " onClick={openModal}>
-        {/* <Image
-          src={file.thumbnail}
-          width={500}
-          height={500}
-          className="w-full h-full rounded-lg object-contain"
-          alt=""
-        /> */}
+        {urlThumbNail &&
+          <Image
+            src={urlThumbNail}
+            width={500}
+            height={500}
+            className="w-full h-full rounded-lg object-contain"
+            alt=""
+          />
+        }
       </div>
 
       <Transition appear show={isOpen} as={Fragment}>
@@ -66,7 +76,7 @@ export default function VideoFile({ file }: IFileProps) {
                     <p className="ml-2"> {file.name}</p>
                   </div>
                   <video
-                    // src={file.link}
+                    src={url}
                     controls // Display native video controls
                     autoPlay={true} // Set to true if you want the video to start playing automatically
                     loop={false} // Set to true if you want the video to loop

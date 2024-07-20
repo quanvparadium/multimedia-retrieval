@@ -1,44 +1,57 @@
-import { handleUploadImage, handleUploadVideo, getNewFilename } from '~/helpers/media';
-import { Media, MediaType } from '~/collections/media.interface';
-import sharp from 'sharp';
-import path from 'path';
+// import path from "path";
+// import { IFileSystem } from "../file-system/file-system";
+// import FileSystemService from "../file-system/file-system.service";
+// import { UPLOAD_TEMP_DIR } from "~/config/constant";
+// import { getThumbnailImage } from "./helpers/screenShot";
+// import ThumbnailService from "../thumbnail/thumbnail.service";
 
-class UploadService {
-    constructor() { }
+// class UploadService {
+//     private fileSystemService: FileSystemService;
+//     private thumbnailService: ThumbnailService;
+//     constructor() {
+//         this.fileSystemService = new FileSystemService();
+//         this.thumbnailService = new ThumbnailService();
+//     }
 
-    async uploadImage(req: Request) {
-        const files = await handleUploadImage(req as any);
-        const result: Media[] = await Promise.all(
-            files.map(async (file) => {
-                const newFileName = getNewFilename(file.newFilename);
-                console.log(file.newFilename, file.filepath, file.originalFilename, file.size);
-                await sharp(file.filepath)
-                    .jpeg({ quality: 10 })
-                    // .resize(200)
-                    .toFile(path.resolve('uploads/images', `${newFileName}.jpg`));
-                // console.log('Info Media', info)
-                return {
-                    url: process.env.HOST
-                        ? `${process.env.HOST}/static/images/${newFileName}`
-                        : `http://localhost:${process.env.PORT || 3000}/static/images/${newFileName}`,
-                    type: MediaType.Image
-                };
-            })
-        );
-        return result;
-    }
+//     async upload(filePath: string, fileSystem: IFileSystem) {
+//         const mimetype = fileSystem.metaData?.mimetype;
+//         if (!mimetype) throw new Error(`fileSystem doesnot contain mimetype`);
+//         const [kind, _] = mimetype.split('/');
+//         if (kind == 'image') {
+//             return this.uploadImage(filePath, fileSystem);
+//         }
+//         if (kind == "video") {
+//             return this.uploadVideo(filePath, fileSystem);
+//         }
+//         throw new Error(`Kind is not supported`);
+//     };
 
-    async uploadVideo(req: Request) {
-        const files = await handleUploadVideo(req as any);
-        const { newFilename } = files[0];
-        console.log('New file name', newFilename);
-        return {
-            url: process.env.HOST
-                ? `${process.env.HOST}/static/videos/${newFilename}`
-                : `http://localhost:${process.env.PORT || 3000}/static/videos/${newFilename}`,
-            type: MediaType.Video
-        };
-    }
-}
-const uploadService = new UploadService();
-export default uploadService;
+//     async uploadImage(filePath: string, fileSystem: IFileSystem) {
+//         const mimetype: any = fileSystem.metaData?.mimetype;
+//         const [_, ext] = mimetype.split('/');
+//         const dirPath = path.dirname(filePath);
+//         const thumbNailId = await this.thumbnailService.createThumbnail
+//         const fileName = path.dirname(filePath);
+//         const tempThumbnailPath = path.join(dirPath, `thumbnail_${fileName}`);
+//         const thumbNailFile = await getThumbnailImage(filePath, tempThumbnailPath, 'image');
+
+//         const thumbNail = {
+//             userId: fileSystem.userId,
+//             metaData: {
+//                 location: fileSystem.metaData?.location,
+//                 storage: fileSystem.metaData?.storage,
+//                 mimetype: `image/${thumbNailFile.format}`
+//             },
+//             type: "file"
+//         };
+//         // const thumbNailSystem = await this.fileSystemService.create
+//     }
+
+//     async uploadVideo(filePath: string, fileSystem: IFileSystem) {
+//         const mimetype: any = fileSystem.metaData?.mimetype;
+//         const [_, ext] = mimetype.split('/');
+//         const t;
+//     }
+// }
+
+// export default UploadService;

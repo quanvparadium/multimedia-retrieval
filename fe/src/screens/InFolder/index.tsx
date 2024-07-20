@@ -153,12 +153,16 @@ export default function InFolder({ folderId }: IInFolder) {
   return (
     <div className="h-full" onContextMenu={handleRightClick} onClick={closeMenu}>
       <BreadCrumbs ancestorData={ancestorData} />
-      <div className="mt-4">
-        <Folders folders={folders} />
-      </div>
-      <div className="mt-4">
+      {
+        folders?.length > 0 && <div className="mt-4">
+          <p className="font-medium text-gray-600">Folders</p>
+          <Folders folders={folders} />
+        </div>
+      }
+      {files?.length > 0 && <div className="mt-4">
+        <p className="font-medium text-gray-600">Files</p>
         <Files files={files} />
-      </div>
+      </div>}
       <input
         ref={fileInputRef}
         type="file"

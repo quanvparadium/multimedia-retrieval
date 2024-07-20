@@ -4,6 +4,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { FaImage } from "react-icons/fa6";
 import { IFileProps } from "./File";
 import { baseURL } from "@/src/apis/axios-base";
+import { logApi } from "@/src/apis/log/log.api";
 
 export default function ImageFile({ file }: IFileProps) {
   let [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function ImageFile({ file }: IFileProps) {
     setIsOpen(false);
   }
   function openModal() {
+    logApi.upload('open', { fileSystemId: file._id });
     setIsOpen(true);
   }
 

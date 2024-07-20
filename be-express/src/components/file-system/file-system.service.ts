@@ -24,7 +24,6 @@ export default class FileSystemService {
             metaData
         });
 
-
         await newFileSystem.save();
         await FileSystemModel.updateOne(
             { _id: parentId },
@@ -127,6 +126,14 @@ export default class FileSystemService {
         }
     }
 
+    async setOpenedAt(id: string) {
+        await FileSystemModel.findByIdAndUpdate(id, { $set: { openedAt: new Date() } });
+    }
+
+    async getRecentOpenedAt(userId: string, type: string) {
+        const fileSystems = await FileSystemModel.find({ type, userId }).sort({ openedAt: -1 }).limit(30);
+        return fileSystems;
+    }
 
     async rename(id: string, newName: string) {
         const fileSystem: any = await this.getFileSystem(id);

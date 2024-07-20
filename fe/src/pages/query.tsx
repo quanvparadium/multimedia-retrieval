@@ -21,11 +21,11 @@ export default function Home() {
     e.preventDefault();
     console.log("file submit", file, e.target);
     const target = e.target as HTMLFormElement & {
-      search: { value: string };
-      typedata: { value: string };
-      topk: { value: string };
-      OCR: { value: string };
-      Speech: { value: string };
+      search: { value: string; };
+      typedata: { value: string; };
+      topk: { value: string; };
+      OCR: { value: string; };
+      Speech: { value: string; };
     };
     const payload = {
       query: target.search.value,
@@ -233,7 +233,7 @@ export default function Home() {
             return (
               <div key={idx} className="relative aspect-w-1 aspect-h-1">
                 <div className="font-bold text-xl">{`${video_path}/${img_path[img_path.length - 1]}`}</div>
-                <div>{}</div>
+                <div>{ }</div>
                 <img src={keyframeUrl} alt="Image" />
               </div>
             );

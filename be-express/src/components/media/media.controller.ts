@@ -12,9 +12,10 @@ export const serveImageController = async (req: Request, res: Response, next: Ne
     //@ts-ignore
     // const userId = req.userId;
     const imageId = req.params.id;
+
     // const isOwner = await fileSystemService.isOwner(imageId, userId);
     // if (!isOwner) throw new AppError(`User ${userId} cannot access fileSystem ${imageId}`, 403);
-
+    
     const fileSystem: any = await fileSystemService.getFileSystem(imageId);
     if (!fileSystem?.metaData?.mimetype?.includes('image')) throw new AppError(`FileType is not correct`, 400);
     const imageStream = await mediaService.serve(fileSystem);
@@ -48,6 +49,6 @@ export const serveVideoController = async (req: Request, res: Response, next: Ne
     };
     res.writeHead(206, headers);
 
-    const videoStream = await mediaService.serve(fileSystem);
+    const videoStream = await mediaService.serve(fileSystem, { start, end });
     return videoStream.pipe(res);
 };

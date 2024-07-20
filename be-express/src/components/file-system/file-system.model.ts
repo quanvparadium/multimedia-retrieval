@@ -4,7 +4,8 @@ const metaDataScheme: Schema = new Schema({
     storage: String,
     location: String,
     size: Number,
-    mimetype: String
+    mimetype: String,
+    thumbNailId: mongoose.Schema.Types.ObjectId
 });
 
 const fileSystemSchema: Schema = new Schema({
@@ -12,10 +13,11 @@ const fileSystemSchema: Schema = new Schema({
     childrenIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'FileSystem' }],
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'FileSystem', default: null },
     type: { type: String, enum: ['file', 'folder'], required: true },
-    name: { type: String, required: true },
+    name: { type: String },
     metaData: {
         type: metaDataScheme,
     },
+    openedAt: Date,
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });
