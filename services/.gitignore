@@ -12,3 +12,4 @@ tmp/
 old*/
 venv/
 .crossnote/
+.python*
