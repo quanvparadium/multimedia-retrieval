@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /code
 
@@ -6,27 +6,28 @@ COPY . /code
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
 RUN apt-get update && apt-get install -y git && apt-get install -y libhdf5-dev
-# RUN apt update \
-#     && apt install -y libmariadb-dev \
-#         gcc \
-#         linux-headers-generic \
-#         python3-dev \
-#         libcogl-pango-dev \
-#         libcairo2-dev \
-#         libtool \
-#         musl-dev \
-#         libffi-dev \
-#         libssl-dev \
-#         libjpeg-dev \
-#         zlib1g-dev
+RUN apt update \
+    && apt install -y libmariadb-dev \
+        gcc \
+        linux-headers-generic \
+        python3-dev \
+        libcogl-pango-dev \
+        libcairo2-dev \
+        libtool \
+        musl-dev \
+        libffi-dev \
+        libssl-dev \
+        libjpeg-dev \
+        zlib1g-dev
 
-# WORKDIR /code/services/LAVIS
+WORKDIR /code/repo/LAVIS
 
-# RUN pip install --no-binary h5py h5py
-# RUN pip install -e .
+RUN pip install --no-binary h5py h5py
+RUN pip install -e .
 
 WORKDIR /code/install
 RUN pip install -r requirements.txt
+RUN pip install -r postenv.txt
 
 WORKDIR /code/app
 
