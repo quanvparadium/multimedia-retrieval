@@ -10,6 +10,7 @@ LAVIS/
 repo/
 tmp/
 old*/
+._*.py
 venv/
 .crossnote/
 .python*

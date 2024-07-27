@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from routes import mainRouter
+from routes import mainRouter
 from config.index import *
 from dotenv import load_dotenv
 load_dotenv()
@@ -9,14 +9,14 @@ load_dotenv()
 app = FastAPI()
 # 
 origins = [
-    f"{os.getenv('HOST')}",
-    f"{os.getenv('HOST')}:{os.getenv('FRONTEND_PORT')}",
+    "http://localhost",
+    f"http://localhost:{os.getenv('FRONTEND_PORT')}",
 ]
 
-# from connections.postgres import psg_manager
-# psg_manager.create_tables()
+from connections.postgres import psg_manager
+psg_manager.create_tables()
 
-# app.include_router(router=mainRouter, prefix='/api')
+app.include_router(router=mainRouter, prefix='/api')
 
 app.add_middleware(
     CORSMiddleware,

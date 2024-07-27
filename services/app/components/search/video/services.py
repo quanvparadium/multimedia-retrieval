@@ -7,8 +7,19 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 from connections.postgres import psg_manager
 from sqlalchemy import text
+from PIL import Image
 from components.ai.visual import DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
 
+def get_result(kf):
+    return {
+        "fileId": kf.fileId,
+        "byte_offset": kf.byte_offset,
+        "keyframeId": kf.id,
+        "cosine_score": kf.distance
+    }
+
+def cosine_score(kf):
+    return kf['cosine_score']
 
 class VideoSearch:        
     @staticmethod
@@ -50,7 +61,7 @@ class VideoSearch:
             db.close()
     
     @staticmethod
-    def query_folder(payload):
+    def query_folder_with_text(payload):
         # Định nghĩa câu lệnh SQL với placeholders
         db = psg_manager.get_session()
         
@@ -71,7 +82,7 @@ class VideoSearch:
         text_features = np.array(text_features).astype(float).flatten().tolist()
         query_vector_str = f"[{','.join(map(str, text_features))}]"
         
-        all_keyframes = dict({})
+        all_keyframes = []
         try:
             for file_id in files:
                 params = {
@@ -81,12 +92,60 @@ class VideoSearch:
                 }
                 result = db.execute(sql_query, params)
                 keyframes = result.fetchall()
-                all_keyframes[file_id] = [kf.address for kf in keyframes]
+
+                current_kf = [get_result(kf) for kf in keyframes]
+                all_keyframes = [*all_keyframes, *current_kf]
         except Exception as e:
             db.rollback()
             raise e
         finally:
             db.close()
     
-        print("ALL KEYFRAMES: ", all_keyframes)
-        return all_keyframes
+        print("ALL KEYFRAMES WITH TEXT SEARCH: ", all_keyframes)
+        result_keyframes = sorted(all_keyframes, key= cosine_score)
+        return result_keyframes
+    
+    @staticmethod
+    def query_folder_with_image(payload):
+        # Định nghĩa câu lệnh SQL với placeholders
+        db = psg_manager.get_session()
+        
+        sql_query = text("""
+            SELECT *, (embedding <-> :query_vector) AS distance
+            FROM keyframes
+            WHERE "fileId" = :video_id
+            ORDER BY distance
+            LIMIT :limit;
+        """)
+        
+        raw_image = Image.open(payload['image_path']).convert('RGB')
+        limit = payload['limit']
+        files = payload['files']
+        
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
+        img_features = np.array(img_features).astype(float).flatten().tolist()
+        query_vector_str = f"[{','.join(map(str, img_features))}]"
+        
+        all_keyframes = []
+        try:
+            for file_id in files:
+                params = {
+                    "video_id": file_id,
+                    "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
+                    "limit": limit
+                }
+                result = db.execute(sql_query, params)
+                keyframes = result.fetchall()
+                current_kf = [get_result(kf) for kf in keyframes]
+                all_keyframes = [*all_keyframes, *current_kf]
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+    
+        print("ALL KEYFRAMES WITH IMAGE SEARCH: ", all_keyframes)
+
+        result_keyframes = sorted(all_keyframes, key= cosine_score)
+        return result_keyframes
