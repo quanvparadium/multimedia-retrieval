@@ -50,3 +50,15 @@ export const getRecentFileSystems = async (req: Request, res: Response, next: Ne
         data: fileSystems
     });
 };
+
+export const getParent = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const { id }: any = req.params;
+    let fileSystems = await fileSystemService.findAncestor(id, 1);
+    fileSystems = fileSystems.filter((file) => file.layer == 1);
+    res.status(200).json({
+        data: fileSystems[0]
+    });
+};

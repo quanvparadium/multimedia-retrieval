@@ -15,18 +15,15 @@ export const searchFolder = async (req: Request, res: Response, next: NextFuncti
     const filteredData = data.filter((data) => data.type == 'file' && data?.metaData?.mimetype?.includes(type));
     const fileIds = filteredData.map((file) => file._id);
     let result: any = [];
-    for (const fileId of fileIds) {
-        try {
-            const res = await axios.post("http://localhost:4000/api/search/video", {
-                query,
-                limit: 3,
-                fileId
-            });
-            result = result.concat(res.data.Address);
-            // console.log(fileId, res.data.Address);
-        } catch (error: any) {
-            console.log(error.message || '');
-        }
+    try {
+        const res = await axios.post("http://localhost:4000/api/search/folder/keyframe/text", {
+            query,
+            limit: 4,
+            files: fileIds
+        });
+        result = res.data.result;
+    } catch (error: any) {
+        console.log(error.response.data);
     }
     // console.log(result);
     return res.status(200).json({

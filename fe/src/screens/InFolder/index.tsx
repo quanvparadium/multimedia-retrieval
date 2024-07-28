@@ -9,8 +9,8 @@ import {
   MdOutlineDriveFolderUpload,
   MdOutlineUploadFile,
 } from "react-icons/md";
-import MenuProvider, { MenuContext } from "./MenuProvider";
-import { ModalContext } from "./ModalProvider";
+import MenuProvider, { MenuContext } from "../../Providers/MenuProvider";
+import { ModalContext } from "../../Providers/ModalProvider";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 import base64 from "base-64";
 import { useRouter } from "next/router";
@@ -103,8 +103,9 @@ export default function InFolder({ folderId }: IInFolder) {
       </div>
     );
   };
+
   useEffect(() => {
-    setModalComponent(ModalComponent);
+    setModalComponent(<ModalComponent />);
   }, [value, folderId]);
 
   const handleFileUpload = () => {
@@ -119,7 +120,7 @@ export default function InFolder({ folderId }: IInFolder) {
   const handleNewFolder = () => {
     setValue("");
     openModal();
-    setModalComponent(ModalComponent);
+    setModalComponent(<ModalComponent />);
     closeMenu();
   };
 
@@ -150,6 +151,7 @@ export default function InFolder({ folderId }: IInFolder) {
   ];
 
   const handleRightClick = openMenu(listTasks);
+
   return (
     <div className="h-full" onContextMenu={handleRightClick} onClick={closeMenu}>
       <BreadCrumbs ancestorData={ancestorData} />

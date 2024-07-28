@@ -1,5 +1,11 @@
+import MenuProvider from "../Providers/MenuProvider";
+import ModalProvider from "../Providers/ModalProvider";
 import Query from "../screens/Query";
 
 export default function Home() {
-  return <Query />;
+  return <MenuProvider>
+    <ModalProvider>
+      <Query />
+    </ModalProvider>
+  </MenuProvider>;
 }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import InFolder from "../screens/InFolder";
-import MenuProvider from "../screens/InFolder/MenuProvider";
-import ModalProvider from "../screens/InFolder/ModalProvider";
+import MenuProvider from "../Providers/MenuProvider";
+import ModalProvider from "../Providers/ModalProvider";
 import { fileSystemApi } from "../apis/file-system/file-system.api";
 
 export default function MyDrive() {

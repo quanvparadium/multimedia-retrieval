@@ -6,7 +6,7 @@ export const ModalContext = createContext({});
 export default function ModalProvider({ children }: IModalProviderProps) {
   let [isOpen, setIsOpen] = useState(false);
 
-  let [Component, setModalComponent] = useState(() => <></>);
+  let [Component, setModalComponent] = useState(<></>);
   function closeModal() {
     setIsOpen(false);
   }

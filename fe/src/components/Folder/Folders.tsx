@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Folder, { IFolder, IFolderProps } from "./Folder";
 import { useContext } from "react";
-import { MenuContext } from "@/src/screens/InFolder/MenuProvider";
+import { MenuContext } from "@/src/Providers/MenuProvider";
 
 export default function Folders({ folders }: IFoldersProps) {
   if (!folders?.length) return;

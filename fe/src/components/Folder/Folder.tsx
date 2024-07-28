@@ -1,15 +1,16 @@
-import { MenuContext } from "@/src/screens/InFolder/MenuProvider";
+import { MenuContext } from "@/src/Providers/MenuProvider";
 import Image from "next/image";
 import { useContext, useEffect, useState } from "react";
 import { IconType } from "react-icons";
 import { FaFolderClosed } from "react-icons/fa6";
 import { MdOutlineFileDownload, MdDriveFileRenameOutline } from "react-icons/md";
 import { LiaTrashAlt } from "react-icons/lia";
-import { ModalContext } from "@/src/screens/InFolder/ModalProvider";
+import { ModalContext } from "@/src/Providers/ModalProvider";
 import base64 from "base-64";
 import { useRouter } from "next/router";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 import { logApi } from "@/src/apis/log/log.api";
+import { FiSearch } from "react-icons/fi";
 
 export default function Folder({ folder }: IFolderProps) {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function Folder({ folder }: IFolderProps) {
     [
       {
         name: "Search",
-        Icon: MdOutlineFileDownload,
+        Icon: FiSearch  ,
         cb: (event: React.MouseEvent<HTMLButtonElement>) => {
           router.push(`/query?fileSystemId=${folder._id}`);
         },

@@ -1,6 +1,8 @@
 import Layout from "@/src/components/Layout";
 import { useRouter } from "next/router";
-import { useState, DragEvent, useEffect } from "react";
+import { useState, DragEvent, useEffect, useContext } from "react";
+import Keyframe from "./Keyframe";
+import { MenuContext } from "@/src/Providers/MenuProvider";
 
 
 const data = [{
@@ -15,6 +17,8 @@ const data = [{
 
 export default function Query() {
     const [file, setFile] = useState<File | undefined>();
+    const { openMenu, closeMenu }: any = useContext(MenuContext);
+
     const [imageLink, setImageLink] = useState<string>();
     const [keyframes, setKeyframes] = useState([]);
     const router = useRouter();
@@ -56,7 +60,7 @@ export default function Query() {
 
     return (
         <Layout>
-            <div className="h-1/4 vh-3/4 p-4">
+            <div className="h-1/4 vh-3/4 p-4" onClick={closeMenu}>
                 <form
                     className=" bg-indigo-50 rounded-3xl p-6"
                     // onClick = {() => {console.log('form')}}
@@ -210,8 +214,12 @@ export default function Query() {
 
                 </form>
 
-                <div className="grid grid-cols-1 py-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-auto h-3/4">
-
+                <div className="grid grid-cols-6 gap-5 mt-3 ">
+                    {
+                        data.map((keyframe) => {
+                            return <Keyframe keyframe={keyframe} />;
+                        })
+                    }
                 </div>
             </div>
         </Layout>

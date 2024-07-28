@@ -1,7 +1,7 @@
 import express from 'express';
 import { catchCtrl } from '~/helpers/catchController';
 import { identify } from '../auth/auth.middleware';
-import { createFolder, getFileSystem, getRecentFileSystems, getRootFileSystem } from './file-system.controller';
+import { createFolder, getFileSystem, getParent, getRecentFileSystems, getRootFileSystem } from './file-system.controller';
 
 const folderRoutes = express.Router();
 //what we need to do. 
@@ -15,6 +15,8 @@ folderRoutes
     .get(catchCtrl(identify), catchCtrl(getFileSystem));
 
 folderRoutes.route('/my-drive').get(catchCtrl(identify), catchCtrl(getRootFileSystem));
+
+folderRoutes.get('/:id/parent', catchCtrl(getParent));
 
 // folderRoutes.route('/rename').post(catchCtrl(identify), catchCtrl(renameFileOrFolder));
 
