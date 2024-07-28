@@ -30,7 +30,7 @@ export default function VideoFile({ file }: IFileProps) {
       }}
     >
       <div className="flex p-3 pt-0 items-center ">
-        <RiFolderVideoFill className="" color="red" />
+        <RiFolderVideoFill className="shrink-0" color="red" />
         <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
       </div>
       <div className="w-full aspect-square bg-black rounded-xl " onClick={openModal}>
@@ -72,7 +72,7 @@ export default function VideoFile({ file }: IFileProps) {
               >
                 <Dialog.Panel>
                   <div className="flex font-medium text-lg text-white items-center bg-slate-600  py-2 px-3  ">
-                    <RiFolderVideoFill className="" color="red" />
+                    <RiFolderVideoFill className="w-5" color="red"  />
                     <p className="ml-2"> {file.name}</p>
                   </div>
                   <video

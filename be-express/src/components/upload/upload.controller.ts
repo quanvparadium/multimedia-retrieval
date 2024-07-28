@@ -7,6 +7,7 @@ import { IMetaData } from '../file-system/file-system';
 import { UPLOAD_STORE_DIR } from '~/config/constant';
 import { moveFile } from '~/helpers/file';
 import ThumbnailService from '../thumbnail/thumbnail.service';
+import axios from 'axios';
 
 const thumbNailService = new ThumbnailService();
 
@@ -38,6 +39,26 @@ export const upload = async (req: Request, res: Response, next: NextFunction) =>
             // Save file to this place
             await moveFile(blob.filepath, `${UPLOAD_STORE_DIR}/${newFileSystem.id}.${ext}`);
             siblingNames.push(fileName);
+            try {
+                const res = await axios.post("http://localhost:4000/api/preprocessing/video", {
+                    "file_id": String(newFileSystem.id),
+                    "user_id": String(userId),
+                    "store": "local",
+                    "type": kind,
+                    "file_path": `${UPLOAD_STORE_DIR}/${newFileSystem.id}.${ext}`
+                }, {
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                console.log(res.data);
+                await axios.post("http://localhost:4000/api/extract/keyframe", {
+                    "userId": String(userId),
+                    "fileId": newFileSystem.id,
+                });
+            } catch (error: any) {
+                console.log(error.response.data.detail);
+            }
         }
     }
 

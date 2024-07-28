@@ -21,5 +21,6 @@ export const UPLOAD_IMAGE_TEMP = 'uploads/images/temp';
 export const UPLOAD_VIDEO_DIR = 'uploads/videos';
 export const UPLOAD_VIDEO_TEMP = 'uploads/videos/temp';
 
-export const UPLOAD_STORE_DIR = 'store/uploads';
+export const STORE_DIR = `${__dirname.replace(/\\/g, "/")}/../../store`;
+export const UPLOAD_STORE_DIR = `${__dirname.replace(/\\/g, "/")}/../../store/uploads`;
 export const UPLOAD_TEMP_DIR = 'store/temp';

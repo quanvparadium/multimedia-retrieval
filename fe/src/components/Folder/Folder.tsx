@@ -17,6 +17,7 @@ export default function Folder({ folder }: IFolderProps) {
   const { openModal, setModalComponent, isOpen, closeModal }: any = useContext(ModalContext);
   const [value, setValue] = useState(folder.name);
   const [name, setName] = useState(folder.name);
+
   const ModalComponent = () => {
     return (
       <div className="w-[360px] px-6 py-5 bg-white rounded-md flex flex-col items-start ">
@@ -57,11 +58,10 @@ export default function Folder({ folder }: IFolderProps) {
   const listTasks = [
     [
       {
-        name: "Download",
+        name: "Search",
         Icon: MdOutlineFileDownload,
         cb: (event: React.MouseEvent<HTMLButtonElement>) => {
-          openModal();
-          setModalComponent(ModalComponent);
+          router.push(`/query?fileSystemId=${folder._id}`);
         },
       },
       {
