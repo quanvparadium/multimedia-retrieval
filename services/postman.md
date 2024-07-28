@@ -13,8 +13,8 @@ curl --location 'http://localhost:4000/api/preprocessing/video' \
 --data '{
     "file_id": "mO4P2PB7wjA",
     "user_id": "1",
+    "format": "mp4",
     "store": "local",
-    "type": "video",
     
     "file_path": "./tmp/video/mO4P2PB7wjA.mp4"
 }'

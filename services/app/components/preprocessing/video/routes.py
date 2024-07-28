@@ -15,7 +15,7 @@ from pydantic import BaseModel
 class VideoItem(BaseModel):
     user_id: str
     store: str
-    type: str
+    format: str
     file_path: str
     file_id: str
     
@@ -29,13 +29,11 @@ class VideoItem(BaseModel):
 #         "status": status
 #     }
 
-@videoPreprocessRouter.post('/')
+@videoPreprocessRouter.post('/video')
 def extract_keyframe(item: VideoItem):
     print("Processing video ...")
-    assert item.type == "video", "File must be a video"
     payload = {
         "user_id": item.user_id,
-        "type": "video",
         "file_id": item.file_id, #Mongo definition
         "file_path": item.file_path, # Actual storage
         "store": item.store, # Local or S3 Storage
@@ -44,7 +42,18 @@ def extract_keyframe(item: VideoItem):
     result = VideoPreprocessing.extract_keyframe(payload)
     return result
 
-
+@videoPreprocessRouter.post('/image')
+def extract_keyframe(item: VideoItem):
+    print("Processing image ...")
+    payload = {
+        "user_id": item.user_id,
+        "file_id": item.file_id, #Mongo definition
+        "file_path": item.file_path, # Actual storage
+        "store": item.store, # Local or S3 Storage
+        "threshold": 0.1
+    }
+    result = VideoPreprocessing.extract_image(payload)
+    return result
 
 
 # @videoPreprocessRouter.post('/{type}/')

@@ -36,6 +36,21 @@ video_dir = os.path.join(current_dir, 'tmp', 'video')
 sys.path.append(video_dir)
 
 
+def get_frame_rate(video_path):
+    ffprobe_cmd = [
+        'ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries',
+        'stream=r_frame_rate', '-of', 'default=noprint_wrappers=1:nokey=1', video_path
+    ]
+    result = subprocess.run(ffprobe_cmd, capture_output=True, text=True)
+    frame_rate_str = result.stdout.strip()
+    num, denom = map(int, frame_rate_str.split('/'))
+    frame_rate = num / denom
+    return frame_rate
+
+def get_time_at_frame(frame_number, frame_rate):
+    time_at_frame = frame_number / frame_rate
+    return time_at_frame
+
 def get_width_and_height(video_path):
     import cv2
     vid = cv2.VideoCapture(video_path)
@@ -66,13 +81,40 @@ def get_frame_byte_offset(video_path, target_frame_index):
 
 class VideoPreprocessing:
     @staticmethod
+    def extract_image(payload):
+        V_WIDTH = 0
+        V_HEIGHT = 0
+        image_path = payload["file_path"]
+        with Image.open(image_path) as img:
+            V_WIDTH, V_HEIGHT = img.size
+        raw_image = Image.open(image_path)
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
+        print("Get features with shape: ", image_features.shape)
+        image_features = np.array(image_features).astype(float).flatten().tolist()
+                        
+        property = {
+            'file_id': payload['file_id'],
+            'user_id': payload['user_id'],
+            'format': payload['format'],
+            "width": int(V_WIDTH),
+            "height": int(V_HEIGHT),
+            "embedding": image_features,
+            "store": payload['store'],
+            "address": image_path
+        }
+        img_result = VideoPreprocessing.create_image(property)
+        if img_result is None:
+            raise Exception(f"Image cannot be created")
+        print(f"Saved and extracted image successfully!")        
+        
+    
+    @staticmethod
     def extract_keyframe(payload):
         file_id = payload['file_id']
         video_path = payload['file_path']        
         keyframe_path = '/'.join(video_path.split('/')[:-2])
-        print("Initializing Transnet model ...")
-
-        print("Initialize done !")
+        print("Extracting video into frames ...")
         video_stream, err = (
             ffmpeg
             .input(video_path)
@@ -81,8 +123,10 @@ class VideoPreprocessing:
         )
         V_WIDTH, V_HEIGHT = get_width_and_height(video_path)
         
+        print("Extracted successfully!")
         video = np.frombuffer(video_stream, np.uint8).reshape([-1, params.INPUT_HEIGHT, params.INPUT_WIDTH, 3])
         # predict transitions using the neural network
+        print("Transnet: Detecting keyframes ...")
         predictions = net.predict_video(video)
 
         scenes = scenes_from_predictions(predictions, threshold=payload['threshold'])
@@ -92,8 +136,8 @@ class VideoPreprocessing:
             keyframe_indices.append(int(scene[0]))
             keyframe_indices.append(int(scene[1]))
         print(predictions.shape)
-        print("Keyframe: ", keyframe_indices)
         
+        frame_rate = get_frame_rate(video_path)
         for index in keyframe_indices:
             if not os.path.exists(f'{keyframe_path}/keyframes/{file_id}'):
                 os.makedirs(f'{keyframe_path}/keyframes/{file_id}')
@@ -103,6 +147,8 @@ class VideoPreprocessing:
             print(type(index))
             print(type(V_WIDTH))
             target_byte_offset = get_frame_byte_offset(video_path=video_path, target_frame_index=index)
+            time_at_frame = get_time_at_frame(frame_number=index, frame_rate=frame_rate)
+            print(f"Time at frame {index}: {time_at_frame} seconds")
             
             raw_image = Image.open(kf_output_path)
             img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
@@ -118,6 +164,7 @@ class VideoPreprocessing:
                 "height": int(V_HEIGHT),
                 "embedding": image_features,
                 "frame_number": index,
+                "frame_second": time_at_frame,
                 "byte_offset": target_byte_offset,
                 "store": payload['store'],
                 "address": kf_output_path
@@ -125,12 +172,15 @@ class VideoPreprocessing:
             
             kf_result = VideoPreprocessing.create_keyframe(property)
             if kf_result is None:
-                raise Exception(f"Keyframe {index} cannot be created")
+                # raise Exception(f"Keyframe {index} cannot be created")
+                return {
+                    "message": f"Keyframe {index} cannot be created"
+                }
             print(f"Extracted keyframe {index} to {kf_output_path}")
 
         print("Keyframes extracted and saved successfully.")
         return {
-            "shape": predictions.shape,
+            "message": "Keyframes extracted and saved successfully."
         }
 
 
@@ -146,6 +196,7 @@ class VideoPreprocessing:
                 height = property['height'],
                 embedding=property['embedding'],
                 frame_number = property['frame_number'],
+                frame_second = property['frame_second'],
                 store = property['store'],
                 byte_offset = property['byte_offset'],
                 address= property['address'],
@@ -159,6 +210,30 @@ class VideoPreprocessing:
             raise e
         finally:
             db.close()
+            
+    @staticmethod
+    def create_image(property):
+        db = psg_manager.get_session()
+        try:
+            img_data = Keyframe(
+                fileId = property['file_id'],
+                userId = property['user_id'],
+                format = property['format'],
+                width = property['width'],
+                height = property['height'],
+                embedding=property['embedding'],
+                store = property['store'],
+                address= property['address'],
+            )
+            db.add(img_data)
+            db.commit()
+            db.refresh(img_data)
+            return img_data
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()            
 
     @staticmethod
     def get_video_properties(video_path: str):

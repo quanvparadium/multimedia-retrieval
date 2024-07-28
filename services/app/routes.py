@@ -7,7 +7,7 @@ from components.search.routes import searchRouter
 
 mainRouter = APIRouter()
 
-mainRouter.include_router(router=videoPreprocessRouter, prefix="/preprocessing/video")
+mainRouter.include_router(router=videoPreprocessRouter, prefix="/preprocessing")
 mainRouter.include_router(router=crawlRouter, prefix="/crawl")
 mainRouter.include_router(router=userRouter, prefix="/user")
 mainRouter.include_router(router=extractRouter, prefix="/extract")
