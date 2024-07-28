@@ -19,6 +19,7 @@ class Keyframe(psg_manager.Base):
     height = Column(Integer, nullable=False)
     frame_number = Column(Integer, nullable=True)
     byte_offset = Column(Float, nullable=True)
+    frame_second = Column(Float, nullable=True)
     
     embedding = Column(Vector(256), nullable=True)  # Allow null values
     store = Column(String, nullable=False, default='local')

@@ -16,7 +16,8 @@ def get_result(kf):
         "byte_offset": kf.byte_offset,
         "keyframeId": kf.id,
         "cosine_score": kf.distance,
-        "frame_number": kf.frame_number
+        "frame_number": kf.frame_number,
+        "frame_second": kf.frame_second
     }
 
 def cosine_score(kf):
