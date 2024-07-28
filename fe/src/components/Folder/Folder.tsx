@@ -16,19 +16,22 @@ export default function Folder({ folder }: IFolderProps) {
   const router = useRouter();
   const { openMenu, closeMenu }: any = useContext(MenuContext);
   const { openModal, setModalComponent, isOpen, closeModal }: any = useContext(ModalContext);
-  const [value, setValue] = useState(folder.name);
   const [name, setName] = useState(folder.name);
 
   const ModalComponent = () => {
+    const [value, setValue] = useState(folder.name);
+
     return (
       <div className="w-[360px] px-6 py-5 bg-white rounded-md flex flex-col items-start ">
         <div className="font-normal text-xl">Rename</div>
         <input
           type="text"
+          autoFocus
           className="outline-none mt-5 border-[1px] border-black rounded-lg py-2 px-3 focus:border-blue-400 w-full"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
+            // e.target.focus();
           }}
         />
         <div className="flex items-end w-full justify-end">
@@ -52,15 +55,15 @@ export default function Folder({ folder }: IFolderProps) {
     );
   };
 
-  useEffect(() => {
-    setModalComponent(ModalComponent);
-  }, [value]);
+  // useEffect(() => {
+  //   setModalComponent(<ModalComponent value={value} setValue={setValue} />);
+  // }, [value, isOpen]);
 
   const listTasks = [
     [
       {
         name: "Search",
-        Icon: FiSearch  ,
+        Icon: FiSearch,
         cb: (event: React.MouseEvent<HTMLButtonElement>) => {
           router.push(`/query?fileSystemId=${folder._id}`);
         },
@@ -70,7 +73,8 @@ export default function Folder({ folder }: IFolderProps) {
         Icon: MdDriveFileRenameOutline,
         cb: (event: React.MouseEvent<HTMLButtonElement>) => {
           closeMenu();
-          setModalComponent(ModalComponent);
+          setModalComponent(<ModalComponent />);
+
           openModal();
         },
       },

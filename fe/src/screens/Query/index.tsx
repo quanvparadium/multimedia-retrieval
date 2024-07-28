@@ -3,22 +3,15 @@ import { useRouter } from "next/router";
 import { useState, DragEvent, useEffect, useContext } from "react";
 import Keyframe from "./Keyframe";
 import { MenuContext } from "@/src/Providers/MenuProvider";
+import { queryApi } from "@/src/apis/query/query.api";
 
 
-const data = [{
-    frame_number: 16763,
-    fileId: "66a12954c6590e67c8389342",
-    byte_offset: 764170
-}, {
-    frame_number: 18042,
-    fileId: "66a12954c6590e67c8389342",
-    byte_offset: 764170
-}];
+const data = [];
 
 export default function Query() {
     const [file, setFile] = useState<File | undefined>();
     const { openMenu, closeMenu }: any = useContext(MenuContext);
-
+    const [query, setQuery] = useState("");
     const [imageLink, setImageLink] = useState<string>();
     const [keyframes, setKeyframes] = useState([]);
     const router = useRouter();
@@ -41,6 +34,19 @@ export default function Query() {
     };
 
     const handleOnSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData();
+        if (file) {
+            // formData.append('blobs', file);
+            formData.set("file", file);
+        }
+        formData.set("fileSystemId", fileSystemId);
+        formData.append("query", query);
+        formData.set("type", "video");
+        const res = await queryApi.search(formData);
+        console.log(res)
+        // const res = await queryApi.get({ fileSystemId, query, type: "video" });
+        setKeyframes(res.data);
     };
 
     const handleUpload = (e: React.FormEvent<HTMLInputElement>) => {
@@ -69,6 +75,8 @@ export default function Query() {
                     <div className="flex lg:col-span-4">
                         <input
                             type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
                             name="search"
                             placeholder="Input your query"
                             autoComplete="off"
@@ -134,11 +142,11 @@ export default function Query() {
                                 <select
                                     id="typedata"
                                     name="typedata"
-                                    defaultValue={"Image"}
+                                    defaultValue={"Video"}
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm font-bold text-center rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 >
-                                    <option value="document">Document</option>
-                                    <option value="image">Image</option>
+                                    {/* <option value="document">Document</option> */}
+                                    {/* <option value="image">Image</option> */}
                                     <option value="video">Video</option>
                                 </select>
                             </div>
@@ -149,24 +157,24 @@ export default function Query() {
                                     htmlFor="topk"
                                     className="block text-sm ml-1 font-semibold text-gray-900 dark:text-white min-w-[90px] required"
                                 >
-                                    Top-k <span className="text-red-500">*</span> :
+                                    TopK <span className="text-red-500">*</span> :
                                 </label>
 
                                 <select
                                     id="topk"
-                                    defaultValue={200}
+                                    defaultValue={3}
                                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm font-bold text-center rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 >
-                                    <option value="200">200</option>
-                                    <option value="500">500</option>
-                                    <option value="1000">1000</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
                                 </select>
                             </div>
                         </div>
                         <div className="flex flex-col ">
                             <div className="min-h-[140px]">
                                 <label htmlFor="input-file" id="drop-area">
-                                    <input type="file" accept="image/*" id="input-file" hidden onChange={handleUpload} />
+                                    <input type="file" accept="image/*" id="input-file" hidden multiple={false} onChange={handleUpload} />
                                     <div
                                         id="img-view"
                                         className=" h-full flex items-center justify-center bg-red-100 cursor-pointer rounded-3xl bg-center bg-no-repeat text-center border-dashed border-2 border-indigo-600 hover:opacity-50"
@@ -179,7 +187,6 @@ export default function Query() {
                                             // backgroundRepeat: imageLink ? '' : undefined,
 
                                             // width: imageLink ? '100%' : undefined,
-
                                             // backgroundSize: imageLink ? 'cover' : undefined,
                                         }}
                                         onDrop={handleDropImage}
@@ -216,7 +223,7 @@ export default function Query() {
 
                 <div className="grid grid-cols-6 gap-5 mt-3 ">
                     {
-                        data.map((keyframe) => {
+                        keyframes.map((keyframe) => {
                             return <Keyframe keyframe={keyframe} />;
                         })
                     }

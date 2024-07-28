@@ -40,21 +40,15 @@ export const upload = async (req: Request, res: Response, next: NextFunction) =>
             await moveFile(blob.filepath, `${UPLOAD_STORE_DIR}/${newFileSystem.id}.${ext}`);
             siblingNames.push(fileName);
             try {
-                const res = await axios.post("http://localhost:4000/api/preprocessing/video", {
-                    "file_id": String(newFileSystem.id),
+                axios.post("http://localhost:4000/api/preprocessing/video", {
                     "user_id": String(userId),
-                    "store": "local",
-                    "type": kind,
+                    "file_id": newFileSystem.id,
+                    format: ext,
+                    store: "local",
                     "file_path": `${UPLOAD_STORE_DIR}/${newFileSystem.id}.${ext}`
-                }, {
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
-                console.log(res.data);
-                await axios.post("http://localhost:4000/api/extract/keyframe", {
-                    "userId": String(userId),
-                    "fileId": newFileSystem.id,
+                }).catch((err) => {
+                    console.log(err.response.data.detail);
+
                 });
             } catch (error: any) {
                 console.log(error.response.data.detail);

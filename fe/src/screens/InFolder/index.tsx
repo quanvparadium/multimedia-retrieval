@@ -16,35 +16,7 @@ import base64 from "base-64";
 import { useRouter } from "next/router";
 import { uploadApi } from "@/src/apis/upload/upload.api";
 
-const defaultFolder = [
-  { name: "abc", dir: "" },
-  { name: "Canh moi", dir: "" },
-  { name: "Khoe", dir: "" },
-];
 
-const defaultFiles = [
-  {
-    type: "video",
-    name: "nguyen bao nguyen.mob",
-    link: "/video.mp4",
-    size: "20.3mp",
-    thumbnail: "/image.webp",
-  },
-  {
-    type: "video",
-    name: "nguyen bao nguyen.mob",
-    link: "/video.mp4",
-    size: "20.3mp",
-    thumbnail: "/image.webp",
-  },
-  {
-    type: "image",
-    name: "xinchao",
-    link: "/image.webp",
-    size: "20.3mp",
-    thumbnail: "/image.webp",
-  },
-];
 
 export default function InFolder({ folderId }: IInFolder) {
   if (!folderId) return <></>;
@@ -73,6 +45,7 @@ export default function InFolder({ folderId }: IInFolder) {
   };
 
   const ModalComponent = () => {
+    const [value, setValue] = useState("");
     return (
       <div className="w-[360px] px-6 py-5 bg-white rounded-md flex flex-col items-start ">
         <div className="font-normal text-xl">New folder</div>
@@ -82,6 +55,7 @@ export default function InFolder({ folderId }: IInFolder) {
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
+            console.log(1);
           }}
         />
         <div className="flex items-end w-full justify-end">
@@ -104,9 +78,9 @@ export default function InFolder({ folderId }: IInFolder) {
     );
   };
 
-  useEffect(() => {
-    setModalComponent(<ModalComponent />);
-  }, [value, folderId]);
+  // useEffect(() => {
+  //   setModalComponent(<ModalComponent value={value} setValue={setValue} />);
+  // }, [value, folderId]);
 
   const handleFileUpload = () => {
     if (!fileInputRef?.current) return;
@@ -120,7 +94,8 @@ export default function InFolder({ folderId }: IInFolder) {
   const handleNewFolder = () => {
     setValue("");
     openModal();
-    setModalComponent(<ModalComponent />);
+    // setModalComponent(<ModalComponent />);
+    setModalComponent(<ModalComponent/>);
     closeMenu();
   };
 

@@ -22,7 +22,7 @@ export default function Keyframe({ keyframe }: any) {
     const handleOnClick = () => {
         openModal();
         // setModalComponent(<ImageComponent url={url} name={name} />);
-        setModalComponent(<VideoComponent fileId={keyframe.fileId} name={name} />);
+        setModalComponent(<VideoComponent fileId={keyframe.fileId} name={name}  startSecond={keyframe.frame_second}/>);
     };
 
     const ImageComponent = ({ name, url }: any) => {
