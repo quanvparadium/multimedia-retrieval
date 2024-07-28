@@ -10,12 +10,17 @@ class VideoSearchBody(BaseModel):
     limit: int
     fileId: str
     
-class FolderSearchBody(BaseModel):
+class FolderQuerySearchBody(BaseModel):
     query: str
     limit: int
     files: List[str]
+    
+class FolderImageSearchBody(BaseModel):
+    image_path: str
+    limit: int
+    files: List[str]
 
-@searchRouter.post('/video')
+@searchRouter.post('/keyframe')
 def video_search(req: VideoSearchBody):
     payload = {
         "query": req.query,
@@ -30,15 +35,28 @@ def video_search(req: VideoSearchBody):
         "Address": result
     } 
     
-@searchRouter.post('/folder/video/')
-def folder_search(req: FolderSearchBody):
+@searchRouter.post('/folder/keyframe/text')
+def folder_search(req: FolderQuerySearchBody):
     payload = {
         "query": req.query,
         "limit": req.limit,
         "files": req.files
     }
-    result = VideoSearch.query_folder(payload)
+    result = VideoSearch.query_folder_with_text(payload)
     return {
-        "message": "Search successfully!"
+        "message": "Search text successfully!",
+        "result": result
     } 
-
+    
+@searchRouter.post('/folder/keyframe/image')
+def folder_search(req: FolderImageSearchBody):
+    payload = {
+        "image_path": req.image_path,
+        "limit": req.limit,
+        "files": req.files
+    }
+    result = VideoSearch.query_folder_with_image(payload)
+    return {
+        "message": "Search image successfully!",
+        "result": result
+    } 

@@ -9,12 +9,12 @@ load_dotenv()
 app = FastAPI()
 # 
 origins = [
-    f"{os.getenv('HOST')}",
-    f"{os.getenv('HOST')}:{os.getenv('FRONTEND_PORT')}",
+    "http://localhost",
+    f"http://localhost:{os.getenv('FRONTEND_PORT')}",
 ]
 
-# from connections.postgres import psg_manager
-# psg_manager.create_tables()
+from connections.postgres import psg_manager
+psg_manager.create_tables()
 
 app.include_router(router=mainRouter, prefix='/api')
 
@@ -29,4 +29,6 @@ app.add_middleware(
 
 if __name__ == '__main__':   
     import uvicorn
+    print("HOST: ", os.getenv('HOST'))
+    print("PORT: ", os.getenv('PORT'))
     uvicorn.run(app, host=os.getenv('HOST'), port=int(os.getenv("PORT"))) 

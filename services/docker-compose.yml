@@ -1,0 +1,31 @@
+version: '1.0.0'
+services:
+    postgres_db:
+        build:
+            dockerfile: ./Dockerfile.pg
+            context: .
+        ports:
+        - 5432:5432
+        env_file:
+        - postgres_db.env
+        volumes:
+        - postgres_data:/var/lib/postgresql/data
+        - ./init_pgvector.sql:/docker-entrypoint-initdb.d/init_pgvector.sql
+    search:
+        # platform: linux/amd64
+        build:
+            dockerfile: ./Dockerfile
+            context: .
+        depends_on:
+            - postgres_db
+        # environment:
+        #     - DATABASE_URL=postgresql://quandatn:@:5432/mydatabase
+        ports:
+           - 4000:4000
+        volumes:
+            - ./app:/code/app
+            # - ./repo/LAVIS:/code/repo/LAVIS
+volumes:
+    postgres_data:
+    app:
+

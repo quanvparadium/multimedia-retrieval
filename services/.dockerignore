@@ -1,0 +1,6 @@
+Database/
+# LAVIS/
+app/
+repo/venv*/
+README.md
+venv*/

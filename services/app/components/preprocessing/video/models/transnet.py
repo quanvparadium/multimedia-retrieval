@@ -1,18 +1,23 @@
 import os
 import numpy as np
 import tensorflow as tf
+# tf.compat.v1.disable_v2_behavior()
+tf.compat.v1.disable_resource_variables()
 
+with tf.compat.v1.Session() as sess:
 
-
+    sess.run(tf.compat.v1.global_variables_initializer())
 class TransNetParams:
-    def __init__(self):
-        self.F = 16
-        self.L = 3
-        self.S = 2
-        self.D = 256
-        self.INPUT_WIDTH = 48
-        self.INPUT_HEIGHT = 27
-        self.CHECKPOINT_PATH = None
+    print("initial transnet")
+    F = 16
+    L = 3
+    S = 2
+    D = 256
+    INPUT_WIDTH = 48
+    INPUT_HEIGHT = 27
+    CHECKPOINT_PATH = None
+    print("initial done")
+    
     
     
 
@@ -22,7 +27,9 @@ class TransNet:
     def __init__(self, params: TransNetParams, session=None, print_model=False):
         self.params = params
         print("Parameters: ", params.INPUT_HEIGHT, params.INPUT_WIDTH)
-        self.session = session or tf.compat.v1.Session()
+        self.session = tf.compat.v1.Session()
+        with tf.compat.v1.Session() as sess:
+            sess.run(tf.compat.v1.global_variables_initializer())
         self._build(print_model)
         self._restore()
 

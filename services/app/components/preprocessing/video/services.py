@@ -5,23 +5,30 @@ import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
-from entities import Video, Keyframe
+from entities import Keyframe
 
 import numpy as np
 import ffmpeg
 import tensorflow as tf
+from PIL import Image
+tf.compat.v1.disable_resource_variables()
 from .models.transnet import TransNetParams, TransNet
 from .models.transnet_utils import scenes_from_predictions
+from components.ai.visual import DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
 
-DEFAULT_CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
+
+DEFAULT_CHECKPOINT_PATH = "./models/transnet_model-F16_L3_S2_D256"
 
 params = TransNetParams()
+# Cách sửa, thêm đuôi meta vào chạy trước, sau đó xoá đi run lại
 params.CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
 # params.set()
 # print("Input width: ", params.INPUT_WIDTH)
 # print("Input height: ", params.INPUT_HEIGHT)
-
+print("Initialize Transnet")
 net = TransNet(params)
+print("Initialize Transnet")
+
 """Add Database path"""
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # Xác định đường dẫn tới thư mục LAVIS
@@ -97,12 +104,19 @@ class VideoPreprocessing:
             print(type(V_WIDTH))
             target_byte_offset = get_frame_byte_offset(video_path=video_path, target_frame_index=index)
             
+            raw_image = Image.open(kf_output_path)
+            img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+            image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
+            print("Get features with shape: ", image_features.shape)
+            image_features = np.array(image_features).astype(float).flatten().tolist()
+            
             property = {
                 'file_id': payload['file_id'],
                 'user_id': payload['user_id'],
                 'format': 'jpg',
                 "width": int(V_WIDTH),
                 "height": int(V_HEIGHT),
+                "embedding": image_features,
                 "frame_number": index,
                 "byte_offset": target_byte_offset,
                 "store": payload['store'],
@@ -130,6 +144,7 @@ class VideoPreprocessing:
                 format = property['format'],
                 width = property['width'],
                 height = property['height'],
+                embedding=property['embedding'],
                 frame_number = property['frame_number'],
                 store = property['store'],
                 byte_offset = property['byte_offset'],
