@@ -15,8 +15,8 @@ export default function DropdownMenu() {
     <div>
       {/* Notification */}
       <Dropdown as="div" className="relative inline-block">
-        <Dropdown.Button className="mx-2 p-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
-          <FaRegBell className="w-6 h-6 text-gray-500" />
+        <Dropdown.Button className="mx-2 p-2  rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
+          <FaRegBell className="text-gray-500" size={21} />
         </Dropdown.Button>
 
         <Dropdown.Items className="absolute z-50 w-48 max-w-md mt-4 transform bg-white rounded-md shadow-lg -translate-x-3/4 min-w-max">
@@ -43,59 +43,27 @@ export default function DropdownMenu() {
 
       {/* Services */}
       <Dropdown as="div" className="relative inline-block">
-        <Dropdown.Button className="mx-2 p-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
+        <Dropdown.Button className="mx-2 p-2 rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
           <HiOutlineViewGrid className="w-6 h-6 text-gray-500" />
         </Dropdown.Button>
 
-        <Dropdown.Items className="absolute z-50 w-48 max-w-md mt-4 transform bg-white rounded-md shadow-lg -translate-x-3/4 min-w-max">
-          <div className="p-3 font-medium border-b">
-            <span className="text-gray-800">Services</span>
-          </div>
-          <ul className="flex flex-col p-2 space-y-1">
-            <li>
-              <a
-                href="#"
-                className="flex items-start px-2 py-1 space-x-2 rounded-md hover:bg-gray-100"
-              >
-                <MdPayment className="w-6 h-6 text-gray-500" />
-                <span className="flex flex-col">
-                  <span className="text-lg">Payment</span>
-                  <span className="text-sm text-gray-400">Lorem ipsum dolor sit.</span>
-                </span>
-              </a>
-            </li>
-          </ul>
-          <div className="flex items-center justify-center p-4 text-blue-700 underline border-t">
-            <a href="#">See All</a>
+        <Dropdown.Items className="absolute z-50 w-[380px] max-w-md mt-4 transform bg-white rounded-3xl shadow-lg -translate-x-3/4 min-w-max">
+          <div className=" bg-sky-100 w-full p-2 rounded-3xl">
+            <div className="grid grid-cols-3 px-7 py-8 bg-slate-50 rounded-2xl">
+              <div className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer ">
+                <div className="w-9 h-9 my-1 rounded-full bg-red-200"></div>
+                <div className="mt-1">Account</div>
+              </div>
+              <div className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer ">
+                {/* <div className="w-9 h-9 my-1 rounded-full bg-red-200"></div> */}
+                <Image className="w-9 h-9 my-1" src="/logo.svg" alt="logo" width={400} height={400} />
+                <div className="mt-1">Retrieval</div>
+              </div>
+            </div>
           </div>
         </Dropdown.Items>
       </Dropdown>
 
-      {/* Settings */}
-      <Dropdown as="div" className="relative inline-block">
-        <Dropdown.Button className="mx-2 p-2 bg-gray-100 rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
-          {/* <HiOutlineViewGrid className="w-6 h-6 text-gray-500"/> */}
-          <IoSettingsOutline className="w-6 h-6 text-gray-500" />
-        </Dropdown.Button>
-
-        <Dropdown.Items className="absolute z-50 w-48 max-w-md mt-4 transform bg-white rounded-md shadow-lg -translate-x-3/4 min-w-max">
-          <div className="p-3 font-medium border-b">
-            <span className="text-gray-800">Settings</span>
-          </div>
-          <ul className="flex flex-col p-2 space-y-1">
-            <li>
-              <a href="#" className="block px-2 py-2 transition rounded-md hover:bg-gray-100">
-                Settings
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-2 py-2 transition rounded-md hover:bg-gray-100">
-                Download Desktop
-              </a>
-            </li>
-          </ul>
-        </Dropdown.Items>
-      </Dropdown>
 
       {/* Profile */}
       <Dropdown as="div" className="relative top-1.5 inline-block">

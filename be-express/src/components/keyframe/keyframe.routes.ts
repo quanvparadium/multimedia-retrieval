@@ -1,8 +1,9 @@
-import { Router } from 'express'
-import { serveAllImageController } from './keyframe.controller'
+import { Router } from 'express';
+import { serveKeyFrame } from './keyframe.controller';
+import { catchCtrl } from '~/helpers/catchController';
 
-const keyframeRouter = Router()
+const keyframeRouter = Router();
 
-keyframeRouter.get('/images', serveAllImageController)
+keyframeRouter.get('/:keyframeNumber/files/:fileId', catchCtrl(serveKeyFrame));
 
-export default keyframeRouter
+export default keyframeRouter;

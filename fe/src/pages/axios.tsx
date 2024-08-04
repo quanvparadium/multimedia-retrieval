@@ -6,9 +6,7 @@ export const axiosBase = axios.create({
     baseURL: `${BACKEND_URL}`, // Đặt baseURL của API của bạn
   });
 
-export const axiosSearch = axios.create({
-  baseURL: `${SEARCH_URL}`, // Đặt baseURL của API của bạn
-});
+
   
 export const axiosAuth = axios.create({
     baseURL: `${BACKEND_URL}`, // Đặt baseURL của API của bạn

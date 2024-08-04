@@ -16,6 +16,10 @@ export const fileSystemApi = {
   },
   getRecent: async (type: string) => {
     return axiosWithToken.get(`/api/folders/recent`, { params: { type } });
+  },
+  getParent: async (fileId: string) => {
+    return axiosWithToken.get(`/api/folders/${fileId}/parent`);
+
   }
   // rename: async (path: string, newName: string) => {
   //   return axiosWithToken.post(`/api/folders/rename`, { path, newName });

@@ -30,7 +30,7 @@ export default function VideoFile({ file }: IFileProps) {
       }}
     >
       <div className="flex p-3 pt-0 items-center ">
-        <RiFolderVideoFill className="" color="red" />
+        <RiFolderVideoFill className="shrink-0" color="red" />
         <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
       </div>
       <div className="w-full aspect-square bg-black rounded-xl " onClick={openModal}>
@@ -71,19 +71,21 @@ export default function VideoFile({ file }: IFileProps) {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel>
-                  <div className="flex font-medium text-lg text-white items-center bg-slate-600  py-2 px-3  ">
-                    <RiFolderVideoFill className="" color="red" />
-                    <p className="ml-2"> {file.name}</p>
+                  <div className="max-w-[800px]">
+                    <div className="flex font-medium text-lg text-white items-center bg-slate-600  py-2 px-3 overflow-hidden ">
+                      <RiFolderVideoFill className="w-5" color="red" />
+                      <p className="ml-2 overflow-hidden whitespace-nowrap"> {file.name}</p>
+                    </div>
+                    <video
+                      src={url}
+                      controls // Display native video controls
+                      autoPlay={true} // Set to true if you want the video to start playing automatically
+                      loop={false} // Set to true if you want the video to loop
+                      muted={false} // Set to true if you want the video to be muted
+                      accessKey=""
+                      security=""
+                    />
                   </div>
-                  <video
-                    src={url}
-                    controls // Display native video controls
-                    autoPlay={true} // Set to true if you want the video to start playing automatically
-                    loop={false} // Set to true if you want the video to loop
-                    muted={false} // Set to true if you want the video to be muted
-                    accessKey=""
-                    security=""
-                  />
                 </Dialog.Panel>
               </Transition.Child>
             </div>

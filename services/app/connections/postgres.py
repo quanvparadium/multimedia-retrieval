@@ -65,6 +65,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
+
 load_dotenv()
 
 class PostgresManager:
@@ -75,7 +77,6 @@ class PostgresManager:
         self.host = os.getenv('POSTGRES_HOST', 'localhost')
         self.port = os.getenv('POSTGRES_PORT', '5432')
         db_url = f"postgresql://{self.user}:%s@{self.host}:{self.port}/{self.database}" % quote_plus(self.password)
-        print(db_url)
         self.engine = create_engine(db_url)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
         self.Base = declarative_base()

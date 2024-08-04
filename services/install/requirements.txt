@@ -14,5 +14,5 @@ pgvector==0.3.0
 git+https://github.com/ytdl-org/youtube-dl.git@master#egg=youtube_dl
 
 ffmpeg-python
-tensorflow==2.15.0
+# tensorflow==2.15.0
 

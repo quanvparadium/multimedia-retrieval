@@ -35,7 +35,7 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
             top: state.position.y,
           }}
         >
-          <div className="w-[300px]  rounded-xl shadow-2 bg-white ">
+          <div className="w-[260px]  rounded-xl shadow-2 bg-white ">
             {state.data &&
               state.data.map((tasks: any, index: string) => {
                 return (
@@ -47,7 +47,7 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
                     {tasks.map((task: any) => {
                       return (
                         <div
-                          className="py-[6px] px-3 text-sm text-gray-800 flex items-center hover:bg-slate-200 cursor-pointer"
+                          className="py-[6px] px-3 text-sm text-gray-800 flex items-center hover:bg-slate-200 cursor-pointer rounded-md"
                           onClick={task.cb}
                         >
                           <task.Icon size={20} className="text-gray-600" />

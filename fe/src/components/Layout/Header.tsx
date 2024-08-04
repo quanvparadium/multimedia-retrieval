@@ -39,9 +39,7 @@ export default function Header() {
       <div className="flex items-center justify-between p-2">
         <Navbar />
 
-        {/* <MobileSearch/> */}
 
-        {/* <DesktopSearch /> */}
 
         <NavbarRight />
       </div>
