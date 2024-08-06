@@ -13,6 +13,7 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
   const openMenu = (data: any) => (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
     event.stopPropagation();
+    console.log('2222 ');
     if (!setState) return;
     setState({
       data: data,

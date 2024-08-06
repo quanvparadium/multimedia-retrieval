@@ -62,3 +62,44 @@ export const getParent = async (req: Request, res: Response, next: NextFunction)
         data: fileSystems[0]
     });
 };
+
+export const getName = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const { id }: any = req.params;
+    let fileSystems = await fileSystemService.findAncestor(id, 1);
+    fileSystems = fileSystems.filter((file) => file.layer == 1);
+    res.status(200).json({
+        data: fileSystems[0]
+    });
+};
+
+export const changeFileName = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    // const userId = req.userId;
+    const { id, name }: any = req.params;
+    await fileSystemService.rename(id, name);
+    res.status(200).json({
+        message: "OK"
+    });
+};
+
+export const downloadFile = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const id: string | number = req.params.id;
+    const file: any = await fileSystemService.getFileSystem(id);
+    const { metaData, type } = file;
+    if (type !== 'file')
+        throw new Error("Cannot download data with type other than 'file'");
+    if (!metaData)
+        throw new Error("MetaData is missing");
+    const { mimetype, location, storage } = metaData;
+    const [_, ext]: any = mimetype.split('/');
+    const filePath = `${location}/${id}.${ext}`;
+    res.setHeader('Content-Type', mimetype);
+    res.download(filePath, file.name);
+};

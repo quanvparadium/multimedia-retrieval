@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaRegBell } from "react-icons/fa";
 import { HiOutlineViewGrid } from "react-icons/hi";
@@ -7,9 +7,17 @@ import { IoSettingsOutline } from "react-icons/io5";
 import { useAppSelector } from "@/src/store/store";
 import { getUser } from "@/src/store/user/userSlice";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import { baseURL } from "@/src/apis/axios-base";
 
 export default function DropdownMenu() {
   const user: any = useAppSelector(getUser);
+  const [avatarUrl, setAvatarUrl] = useState('/avatar.png');
+  useEffect(() => {
+    if (!user?.avatar) return;
+    setAvatarUrl(`${baseURL}/api/users/avatar?avatarId=${user.avatar}`);
+  }, [user]);
+
   const router = useRouter();
   return (
     <div>
@@ -50,15 +58,22 @@ export default function DropdownMenu() {
         <Dropdown.Items className="absolute z-50 w-[380px] max-w-md mt-4 transform bg-white rounded-3xl shadow-lg -translate-x-3/4 min-w-max">
           <div className=" bg-sky-100 w-full p-2 rounded-3xl">
             <div className="grid grid-cols-3 px-7 py-8 bg-slate-50 rounded-2xl">
-              <div className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer ">
-                <div className="w-9 h-9 my-1 rounded-full bg-red-200"></div>
+              <Link href={'/info'} className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer" >
+                {/* <div className="w-9 h-9 my-1 rounded-full bg-red-200"></div> */}
+                <Image
+                  height={400}
+                  width={400}
+                  src={avatarUrl}
+                  className=" rounded-full w-9 h-9 my-1 "
+                  alt=""
+                />
                 <div className="mt-1">Account</div>
-              </div>
-              <div className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer ">
+              </Link>
+              <Link href={"/"} className="py-2 px-1 flex flex-col items-center hover:bg-sky-100 rounded-2xl cursor-pointer ">
                 {/* <div className="w-9 h-9 my-1 rounded-full bg-red-200"></div> */}
                 <Image className="w-9 h-9 my-1" src="/logo.svg" alt="logo" width={400} height={400} />
                 <div className="mt-1">Retrieval</div>
-              </div>
+              </Link>
             </div>
           </div>
         </Dropdown.Items>
@@ -73,7 +88,7 @@ export default function DropdownMenu() {
           <Image
             height={500}
             width={500}
-            src="/nguyen.jpg"
+            src={avatarUrl}
             className="rounded-full w-9 h-9 "
             alt=""
           />
@@ -84,16 +99,11 @@ export default function DropdownMenu() {
             <span className="text-sm text-gray-400">{user?.email}</span>
           </div>
 
-          <ul className="flex flex-col p-2 my-2 space-y-1">
+          <ul className="flex flex-col  ">
             <li>
-              <a href="#" className="block px-2 py-2 transition rounded-md hover:bg-gray-100">
+              <Link href="/info" className="block p-3 transition hover:bg-gray-100">
                 Profile
-              </a>
-            </li>
-            <li>
-              <a href="#" className="block px-2 py-2 transition rounded-md hover:bg-gray-100">
-                Add another account
-              </a>
+              </Link>
             </li>
           </ul>
           <div

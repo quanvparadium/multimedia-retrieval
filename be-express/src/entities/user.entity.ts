@@ -28,6 +28,9 @@ export class User {
     @Column({ default: 0 })
     balance: number;
 
+    @Column({ length: 200, default: '' })
+    avatar: string;
+
     @OneToMany(() => Data, (data) => data.user)
     data: Data[];
 

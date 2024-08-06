@@ -19,7 +19,12 @@ export const fileSystemApi = {
   },
   getParent: async (fileId: string) => {
     return axiosWithToken.get(`/api/folders/${fileId}/parent`);
-
+  },
+  changeFileName: async (fileId: string, fileName: string) => {
+    return axiosWithToken.put(`/api/folders/${fileId}/rename/${fileName}`);
+  },
+  download: async (fileId: string) => {
+    return axiosWithToken.get(`/api/folders/${fileId}/download`);
   }
   // rename: async (path: string, newName: string) => {
   //   return axiosWithToken.post(`/api/folders/rename`, { path, newName });
