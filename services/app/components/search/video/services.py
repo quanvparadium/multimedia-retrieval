@@ -2,7 +2,7 @@ import os
 import sys
 import torch
 import numpy as np
-
+import datetime
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from connections.postgres import psg_manager
@@ -92,8 +92,10 @@ class VideoSearch:
                     "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
                     "limit": limit
                 }
+                begin_time = datetime.datetime.now()
                 result = db.execute(sql_query, params)
                 keyframes = result.fetchall()
+                print("Total time search: ", datetime.datetime.now() - begin_time)
 
                 current_kf = [get_result(kf) for kf in keyframes]
                 all_keyframes = [*all_keyframes, *current_kf]

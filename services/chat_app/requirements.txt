@@ -1,0 +1,12 @@
+google-generativeai 
+langchain-google-genai 
+chromadb 
+pypdf
+python-dotenv
+langchain
+langchain-community
+langchain-openai
+langchain-postgres
+grpcio==1.64.1
+pgvector
+psycopg2
