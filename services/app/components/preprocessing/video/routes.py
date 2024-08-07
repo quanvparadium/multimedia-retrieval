@@ -19,6 +19,12 @@ class VideoItem(BaseModel):
     file_path: str
     file_id: str
     
+class TestVideoItem(BaseModel):
+    user_id: str
+    store: str
+    format: str
+    folder_path: str
+    file_id: str
 
 # @videoPreprocessRouter.get('/{keyframeId}/')
 # def status(keyframeId: str):
@@ -42,15 +48,31 @@ def extract_keyframe(item: VideoItem):
     result = VideoPreprocessing.extract_keyframe(payload)
     return result
 
+@videoPreprocessRouter.post('/test-video')
+def test_extract_keyframe(item: TestVideoItem):
+    print("Test indexing ...")
+    payload = {
+        "user_id": item.user_id,
+        "file_id": item.file_id, #Mongo definition
+        "folder_path": item.folder_path, # Actual storage
+        "store": item.store, # Local or S3 Storage
+        "threshold": 0.1
+    }
+    # result = VideoPreprocessing.test_indexing(payload)
+    result = {
+        "message": "Update soon ..."
+    }
+    return result    
+
 @videoPreprocessRouter.post('/image')
-def extract_keyframe(item: VideoItem):
+def extract_image(item: VideoItem):
     print("Processing image ...")
     payload = {
         "user_id": item.user_id,
         "file_id": item.file_id, #Mongo definition
         "file_path": item.file_path, # Actual storage
         "store": item.store, # Local or S3 Storage
-        "threshold": 0.1
+        "format": item.format
     }
     result = VideoPreprocessing.extract_image(payload)
     return result

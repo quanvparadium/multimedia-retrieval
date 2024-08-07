@@ -187,7 +187,7 @@ class DocumentPreprocessing:
                 current_metadata = result[0].metadata
                 # print("Score: ", result[1])
                 # print("Source: ", result[0].page_content)
-                
+                print("Score: ", result[1])
                 similarity_scores.append({
                     **current_metadata,
                     "collection_name": file_id,
@@ -239,8 +239,10 @@ class DocumentPreprocessing:
             print(result["result"])
         return {
             # "answer": result["result"] if result else "Document will be generated",
+            "file_id": top1["collection_name"],
             "source": top1['source'],
             "page": top1['page'],
+            "score": top1["score"]
         }        
         
             

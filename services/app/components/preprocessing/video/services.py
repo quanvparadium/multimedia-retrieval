@@ -85,8 +85,11 @@ class VideoPreprocessing:
         V_WIDTH = 0
         V_HEIGHT = 0
         image_path = payload["file_path"]
+        print("Open image")
         with Image.open(image_path) as img:
             V_WIDTH, V_HEIGHT = img.size
+        print("Open image done")
+            
         raw_image = Image.open(image_path)
         img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
         image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
@@ -105,13 +108,28 @@ class VideoPreprocessing:
         }
         img_result = VideoPreprocessing.create_image(property)
         if img_result is None:
-            raise Exception(f"Image cannot be created")
-        print(f"Saved and extracted image successfully!")        
+            # raise Exception(f"Keyframe {index} cannot be created")
+            return {
+                "message": f"Image {image_path} cannot be created"
+            }
+        else:
+                if isinstance(img_result, dict):
+                    return img_result if "message" in img_result else "Fail code"
+        print(f"Saved and extracted image successfully!")  
+        return {
+            "message": f"Saved and extracted image {image_path} successfully!"
+        }      
         
     
     @staticmethod
     def extract_keyframe(payload):
         file_id = payload['file_id']
+        db = psg_manager.get_session()
+        result = db.query(Keyframe).filter(Keyframe.fileId == file_id).all()
+        if result:
+            return {
+                "message": "Video is existed"
+            }
         video_path = payload['file_path']        
         keyframe_path = '/'.join(video_path.split('/')[:-2])
         print("Extracting video into frames ...")
@@ -176,6 +194,9 @@ class VideoPreprocessing:
                 return {
                     "message": f"Keyframe {index} cannot be created"
                 }
+            else:
+                if isinstance(kf_result, dict):
+                    return kf_result if "message" in kf_result else "Fail code"
             print(f"Extracted keyframe {index} to {kf_output_path}")
 
         print("Keyframes extracted and saved successfully.")
@@ -214,6 +235,12 @@ class VideoPreprocessing:
     @staticmethod
     def create_image(property):
         db = psg_manager.get_session()
+        result = db.query(Keyframe).filter(Keyframe.fileId == property['file_id']).all()
+        if (result):
+            print("Image is existed")
+            return {
+                "message": "Image is existed"
+            }
         try:
             img_data = Keyframe(
                 fileId = property['file_id'],
@@ -256,8 +283,27 @@ class VideoPreprocessing:
             return None
 
     @staticmethod
+    def test_indexing(payload):
+        folder_path = payload['folder_path']
+        for file_name in os.listdir(folder_path):
+            print(file_name)
+            file_path = os.path.join(folder_path, file_name)
+            
+        # property = {
+        #     'file_id': payload['file_id'],
+        #     'user_id': payload['user_id'],
+        #     'format': 'jpg',
+        #     "width": int(V_WIDTH),
+        #     "height": int(V_HEIGHT),
+        #     "embedding": image_features,
+        #     "frame_number": index,
+        #     "frame_second": time_at_frame,
+        #     "byte_offset": target_byte_offset,
+        #     "store": payload['store'],
+        #     "address": kf_output_path
+        # }        
+
+    @staticmethod
     def get_status(id):
         pass
 
-    def get_path(id):
-        return "test_2.mp4"
