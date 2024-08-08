@@ -7,16 +7,18 @@ import { MenuContext } from "@/src/Providers/MenuProvider";
 import { ModalContext } from "@/src/Providers/ModalProvider";
 import { LiaTrashAlt } from "react-icons/lia";
 import { baseURL } from "@/src/apis/axios-base";
+import DocumentFile from "./DocumentFile";
 
 export default function File({ file }: IFileProps) {
   if (!file?.metaData?.mimetype) return;
   const type = file.metaData.mimetype.split('/')[0];
   const [name, setName] = useState(file.name);
-  const { openMenu, closeMenu }: any = useContext(MenuContext);
+  const { openMenu, closeMenu, emitSignal }: any = useContext(MenuContext);
   const { openModal, setModalComponent, isOpen, closeModal }: any = useContext(ModalContext);
 
   let Component = ImageFile;
   if (type == "video") Component = VideoFile;
+  if (type == "application") Component = DocumentFile;
 
   const ModalComponent = ({ name }: any) => {
     const [value, setValue] = useState(name);
@@ -78,7 +80,14 @@ export default function File({ file }: IFileProps) {
         },
       },
     ],
-    [{ name: "Move to trash", Icon: LiaTrashAlt }],
+    [{
+      name: "Move to trash", Icon: LiaTrashAlt,
+      cb: async (event: React.MouseEvent<HTMLButtonElement>) => {
+        closeMenu();
+        await fileSystemApi.moveToTrash(file._id);
+        emitSignal();
+      },
+    }],
   ];
   const handleRightClick = openMenu(listTasks);
 

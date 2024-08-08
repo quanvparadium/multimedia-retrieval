@@ -2,6 +2,7 @@ import express, { Express, NextFunction, Request, Response } from 'express';
 import FileSystemService from '../file-system/file-system.service';
 import MediaService from './media.service';
 import { AppError } from '~/errors/app-error';
+import fs from 'fs';
 
 
 const fileSystemService = new FileSystemService();
@@ -15,11 +16,20 @@ export const serveImageController = async (req: Request, res: Response, next: Ne
 
     // const isOwner = await fileSystemService.isOwner(imageId, userId);
     // if (!isOwner) throw new AppError(`User ${userId} cannot access fileSystem ${imageId}`, 403);
-    
+
     const fileSystem: any = await fileSystemService.getFileSystem(imageId);
     if (!fileSystem?.metaData?.mimetype?.includes('image')) throw new AppError(`FileType is not correct`, 400);
     const imageStream = await mediaService.serve(fileSystem);
     return imageStream.pipe(res);
+};
+
+export const serveDocumentController = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const documentId = req.params.id;
+    const fileSystem: any = await fileSystemService.getFileSystem(documentId);
+    if (!fileSystem?.metaData?.mimetype?.includes('application')) throw new AppError(`FileType is not correct`, 400);
+    const documentStream = fs.createReadStream(fileSystem.metaData.path);
+    return documentStream.pipe(res);
 };
 
 export const serveVideoController = async (req: Request, res: Response, next: NextFunction) => {

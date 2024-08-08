@@ -5,7 +5,9 @@ const metaDataScheme: Schema = new Schema({
     location: String,
     size: Number,
     mimetype: String,
-    thumbNailId: mongoose.Schema.Types.ObjectId
+    thumbNailId: mongoose.Schema.Types.ObjectId,
+    path: String
+
 });
 
 const fileSystemSchema: Schema = new Schema({
@@ -18,6 +20,8 @@ const fileSystemSchema: Schema = new Schema({
         type: metaDataScheme,
     },
     openedAt: Date,
+    isDeleted: { type: Boolean, default: false },
+    deletedDAt: { type: Date },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

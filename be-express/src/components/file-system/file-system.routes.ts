@@ -1,7 +1,7 @@
 import express from 'express';
 import { catchCtrl } from '~/helpers/catchController';
 import { identify } from '../auth/auth.middleware';
-import { changeFileName, createFolder, downloadFile, getFileSystem, getParent, getRecentFileSystems, getRootFileSystem } from './file-system.controller';
+import { changeFileName, createFolder, deleteFileSystem, downloadFile, getDeletedFileSystem, getFileSystem, getParent, getRecentFileSystems, getRootFileSystem, restoreFileSystem } from './file-system.controller';
 
 const folderRoutes = express.Router();
 //what we need to do. 
@@ -11,6 +11,12 @@ folderRoutes
     .route('/')
     .post(catchCtrl(identify), catchCtrl(createFolder))
     .get(catchCtrl(identify), catchCtrl(getFileSystem));
+
+folderRoutes.route('/:id').delete(catchCtrl(identify), catchCtrl(deleteFileSystem));
+
+folderRoutes.route('/:id/restore').put(catchCtrl(identify), catchCtrl(restoreFileSystem));
+
+folderRoutes.route("/recentDeleted").get(catchCtrl(identify), catchCtrl(getDeletedFileSystem));
 
 folderRoutes.route('/my-drive').get(catchCtrl(identify), catchCtrl(getRootFileSystem));
 

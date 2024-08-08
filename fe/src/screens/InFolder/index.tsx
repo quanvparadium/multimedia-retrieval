@@ -27,7 +27,7 @@ export default function InFolder({ folderId }: IInFolder) {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [value, setValue] = useState("");
   const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
-  const { openMenu, closeMenu }: any = useContext(MenuContext);
+  const { openMenu, closeMenu, signal, emitSignal }: any = useContext(MenuContext);
   const router = useRouter();
 
   const getFoldersAndFiles = async () => {
@@ -89,13 +89,13 @@ export default function InFolder({ folderId }: IInFolder) {
 
   useEffect(() => {
     getFoldersAndFiles();
-  }, [folderId]);
+  }, [folderId, signal]);
 
   const handleNewFolder = () => {
     setValue("");
     openModal();
     // setModalComponent(<ModalComponent />);
-    setModalComponent(<ModalComponent/>);
+    setModalComponent(<ModalComponent />);
     closeMenu();
   };
 
@@ -143,7 +143,7 @@ export default function InFolder({ folderId }: IInFolder) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,video/*"
+        accept="image/*,video/*,application/*"
         onChange={handleUpload}
         multiple
         style={{ display: "none" }}

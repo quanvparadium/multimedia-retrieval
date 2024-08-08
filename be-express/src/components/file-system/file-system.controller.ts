@@ -1,6 +1,7 @@
 import express, { Express, NextFunction, Request, Response } from 'express';
 import { AppError } from "~/errors/app-error";
 import FileSystemService from "./file-system.service";
+import { FileSystemModel } from './file-system.model';
 
 export const createFolder = async (req: Request, res: Response, next: NextFunction) => {
     const fileSystemService = new FileSystemService();
@@ -102,4 +103,36 @@ export const downloadFile = async (req: Request, res: Response, next: NextFuncti
     const filePath = `${location}/${id}.${ext}`;
     res.setHeader('Content-Type', mimetype);
     res.download(filePath, file.name);
+};
+
+
+export const deleteFileSystem = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const id: string | number = req.params.id;
+    await fileSystemService.delete(id);
+    res.status(200).json({
+        message: "OK"
+    });
+};
+
+export const restoreFileSystem = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const id: string | number = req.params.id;
+    await fileSystemService.restore(id);
+    res.status(200).json({
+        message: "OK"
+    });
+};
+
+export const getDeletedFileSystem = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const userId = req.userId;
+    const files = await FileSystemModel.find({ userId, isDeleted: true }).sort({ deletedAt: -1 });
+    res.status(200).json({
+        data: files
+    });
 };

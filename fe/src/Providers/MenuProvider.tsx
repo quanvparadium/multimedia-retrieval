@@ -10,6 +10,9 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
     position: { x: 0, y: 0 },
   });
 
+  const [signal, setSignal] = useState(false);
+  const emitSignal = () => setSignal(pre => !pre);
+
   const openMenu = (data: any) => (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -27,7 +30,7 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
   };
 
   return (
-    <MenuContext.Provider value={{ state, setState, openMenu, closeMenu }}>
+    <MenuContext.Provider value={{ state, setState, openMenu, closeMenu, emitSignal, signal }}>
       {state.isAppear && (
         <div
           style={{

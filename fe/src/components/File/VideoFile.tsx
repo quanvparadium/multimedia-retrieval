@@ -8,7 +8,6 @@ import { logApi } from "@/src/apis/log/log.api";
 
 export default function VideoFile({ file }: IFileProps) {
   let [isOpen, setIsOpen] = useState(false);
-  console.log(1);
   function closeModal() {
     setIsOpen(false);
   }

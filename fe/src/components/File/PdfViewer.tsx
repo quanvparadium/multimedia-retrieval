@@ -38,14 +38,13 @@ export default function PdfViewer({ url }: any) {
     };
 
     return (
-        <div className='relative inline-block '>
+        <div className='relative inline-block p-3 bg-gray-300 rounded-lg'>
             <Document
                 file={url}
                 onLoadSuccess={onDocumentLoadSuccess}
-                className={'relative'}
+                className={'relative rounded-md'}
             >
-                <Page pageNumber={pageNumber} className={"relative"} />
-
+                <Page pageNumber={pageNumber} className={"relative rounded-sm"} />
             </Document>
             <button
                 className="absolute top-1/2 left-4 transform -translate-y-1/2 px-4 py-2 bg-gray-300 text-white rounded shadow-md hover:bg-gray-400 opacity-40 disabled:opacity-20 z-10"

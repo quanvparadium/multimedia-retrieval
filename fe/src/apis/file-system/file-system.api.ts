@@ -25,8 +25,18 @@ export const fileSystemApi = {
   },
   download: async (fileId: string) => {
     return axiosWithToken.get(`/api/folders/${fileId}/download`);
-  }
+  },
+  moveToTrash: async (fileId: string) => {
+    return axiosWithToken.delete(`/api/folders/${fileId}`);
+  },
+  restore: async (fileId: string) => {
+    return axiosWithToken.put(`/api/folders/${fileId}/restore`);
+  },
+  getDeletedFiles: async () => {
+    return axiosWithToken.get(`/api/folders/recentDeleted`);
+  },
   // rename: async (path: string, newName: string) => {
   //   return axiosWithToken.post(`/api/folders/rename`, { path, newName });
   // },
 };
+

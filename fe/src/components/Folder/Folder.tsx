@@ -14,7 +14,7 @@ import { FiSearch } from "react-icons/fi";
 
 export default function Folder({ folder }: IFolderProps) {
   const router = useRouter();
-  const { openMenu, closeMenu }: any = useContext(MenuContext);
+  const { openMenu, closeMenu, emitSignal }: any = useContext(MenuContext);
   const { openModal, setModalComponent, isOpen, closeModal }: any = useContext(ModalContext);
   const [name, setName] = useState(folder.name);
 
@@ -77,7 +77,14 @@ export default function Folder({ folder }: IFolderProps) {
         },
       },
     ],
-    [{ name: "Move to trash", Icon: LiaTrashAlt }],
+    [{
+      name: "Move to trash", Icon: LiaTrashAlt,
+      cb: async (event: React.MouseEvent<HTMLButtonElement>) => {
+        closeMenu();
+        await fileSystemApi.moveToTrash(folder._id);
+        emitSignal();
+      },
+    }],
   ];
   const handleRightClick = openMenu(listTasks);
 

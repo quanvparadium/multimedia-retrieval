@@ -8,6 +8,7 @@ import { FaRegFolderOpen } from "react-icons/fa";
 import Image from "next/image";
 import { CustomSidebarProps } from "./interface";
 import { SidebarContext } from "./SidebarContext";
+import { IoTrashOutline } from "react-icons/io5";
 
 export default function CustomSidebar() {
   const { isSidebarOpen, setSidebarOpen }: any = useContext(SidebarContext);
@@ -32,6 +33,11 @@ export default function CustomSidebar() {
       path: "/my-drive",
       name: "Quản lý dữ liệu",
       Icon: FaRegFolderOpen,
+    },
+    {
+      path: "/trash",
+      name: "Thùng rác",
+      Icon: IoTrashOutline,
     },
   ];
   const [pageIndex, setPageIndex] = useState(0);
@@ -100,6 +106,7 @@ export default function CustomSidebar() {
                   "lg:justify-center": !isSidebarOpen,
                   "rounded-3xl": isSidebarOpen,
                   "rounded-md": !isSidebarOpen,
+                  "mt-8": index % 3 == 0 && index / 3 > 0
                 },
               )}
             >

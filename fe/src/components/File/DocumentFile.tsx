@@ -7,49 +7,47 @@ import { MenuContext } from "@/src/Providers/MenuProvider";
 import { ModalContext } from "@/src/Providers/ModalProvider";
 import { Document, Page, pdfjs } from 'react-pdf';
 import dynamic from "next/dynamic";
+import { baseURL } from "@/src/apis/axios-base";
+import { RiFolderVideoFill } from "react-icons/ri";
 // @ts-ignore
 
 
 const PdfViewer = dynamic(() => import("./PdfViewer.tsx"), { ssr: false, });
 
-export default function DocumentFile({ }) {
-    let [isOpen, setIsOpen] = useState(false);
+export default function DocumentFile({ file }: IFileProps) {
     const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
-    const { openMenu, closeMenu }: any = useContext(MenuContext);
-    const url = ``;
+    const url = `${baseURL}/api/media/documents/${file._id}`;
 
-    const [showPdf, setShowPdf] = useState(false);
-    const [pdfUrl, setPdfUrl] = useState('');
+
+    const thumbNailId = file.metaData.thumbNailId;
+    let urlThumbNail;
+    if (thumbNailId) urlThumbNail = `${baseURL}/api/thumbnails/${file.metaData.thumbNailId}`;
+
 
     const handleClick = () => {
         // Set the PDF URL dynamically here
-        setPdfUrl('/test.pdf');
-        setShowPdf(true);
+        setModalComponent(<PdfViewer url={url} />);
+        openModal();
     };
 
     return (
-        <div>
-            <h1>Dynamic PDF Viewer</h1>
-            <button onClick={handleClick}>Show PDF</button>
-            {/* @ts-ignore */}
-            {showPdf && pdfUrl && <PdfViewer url={pdfUrl} />}
+        <div className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer">
+            <div className="flex p-3 pt-0 items-center ">
+                <RiFolderVideoFill className="shrink-0" color="red" />
+                <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
+            </div>
+            <div className="w-full aspect-square bg-black rounded-xl " onClick={handleClick}>
+                {urlThumbNail &&
+                    <Image
+                        src={urlThumbNail}
+                        width={500}
+                        height={500}
+                        className="w-full h-full rounded-lg object-contain"
+                        alt=""
+                    />
+                }
+            </div>
         </div>
     );
-
-    // return (
-    //     <div
-    //         className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer"
-    //         onContextMenu={(e) => {
-    //             e.stopPropagation(); // Prevent default context menu behavior
-    //         }}
-    //     >
-    //         <div className="flex p-3 pt-0 items-center ">
-    //             <FaImage className="" color="orange" />
-    //             <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{'hello'}</p>
-    //         </div>
-
-
-    //     </div>
-    // );
 }
 

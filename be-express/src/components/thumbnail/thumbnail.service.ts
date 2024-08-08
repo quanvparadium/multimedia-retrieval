@@ -6,9 +6,7 @@ import ffmpeg from 'fluent-ffmpeg';
 
 
 export default class ThumbnailService {
-    constructor() {
-
-    }
+    constructor() { }
 
     async createThumbNail(filePath: string, kind: string) {
         let ext = path.extname(filePath);
@@ -26,7 +24,7 @@ export default class ThumbnailService {
     }
 
     async createThumbnailImage(filePath: string, destPath: string) {
-        await sharp(filePath).resize(320, 240)
+        await sharp(filePath).jpeg({ quality: 30 })
             .toFile(destPath);
     }
 

@@ -84,7 +84,10 @@ export default class FileSystemService {
                 connectToField: "_id",
                 depthField: "layer",
                 maxDepth,
-                as: "descendantData"
+                as: "descendantData",
+                restrictSearchWithMatch: {
+                    isDeleted: false
+                }
             }
         }]);
         if (res.length == 0) throw new Error(`Cannot find FileSystem with id ${id}`);
@@ -131,7 +134,7 @@ export default class FileSystemService {
     }
 
     async getRecentOpenedAt(userId: string, type: string) {
-        const fileSystems = await FileSystemModel.find({ type, userId }).sort({ openedAt: -1 }).limit(30);
+        const fileSystems = await FileSystemModel.find({ type, userId, isDeleted: false }).sort({ openedAt: -1 }).limit(30);
         return fileSystems;
     }
 
@@ -152,7 +155,22 @@ export default class FileSystemService {
     }
 
     async delete(id: string) {
+        await FileSystemModel.findByIdAndUpdate(id, {
+            $set: {
+                isDeleted: true,
+                deletedAt: Date.now()
+            }
+        });
+    }
 
+
+    async restore(id: string) {
+        await FileSystemModel.findByIdAndUpdate(id, {
+            $set: {
+                isDeleted: false,
+                deletedAt: Date.now()
+            }
+        });
     }
 }
 
