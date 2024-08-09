@@ -44,6 +44,13 @@ def get_retriever_with_scores(vectorstore, query: str, k: int) -> List[Document]
 def retriever_with_scores(query: str, k: int) -> List[Document]:
     return get_retriever_with_scores(db_vector, query, k)
 
+def get_output_document(document_file):
+    return {
+        "file_id": document_file["collection_name"],
+        "source": document_file['source'],
+        "page": document_file['page'],
+        "score": document_file["score"]
+    }
 
 class DocumentPreprocessing:
     @staticmethod
@@ -188,6 +195,8 @@ class DocumentPreprocessing:
                 # print("Score: ", result[1])
                 # print("Source: ", result[0].page_content)
                 print("Score: ", result[1])
+                print(current_metadata)
+                print("="*10)
                 similarity_scores.append({
                     **current_metadata,
                     "collection_name": file_id,
@@ -207,7 +216,10 @@ class DocumentPreprocessing:
         def return_score(obj):
             return obj['score']
         begin_time = datetime.now()       
-        top1 = sorted(similarity_scores, key=return_score)[0]
+        sort_sim_scores = sorted(similarity_scores, key=return_score)
+        print("Length: ", len(sort_sim_scores))
+        
+        top1 = sort_sim_scores[0]
         print("Total sort time: ", datetime.now() - begin_time)
       
         
@@ -237,13 +249,11 @@ class DocumentPreprocessing:
                 print("Metadata: ", document.metadata)
                 print("="*30)
             print(result["result"])
+        
         return {
-            # "answer": result["result"] if result else "Document will be generated",
-            "file_id": top1["collection_name"],
-            "source": top1['source'],
-            "page": top1['page'],
-            "score": top1["score"]
-        }        
+            "message": "Search document by text successfully!",
+            "result": [get_output_document(doc_file) for doc_file in sort_sim_scores]
+        }
         
             
             
