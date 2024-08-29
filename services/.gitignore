@@ -11,7 +11,8 @@ repo/
 tmp/
 old*/
 ._*.py
-venv/
+venv*/
 .crossnote/
 .python*
 app/data/
+data*/
