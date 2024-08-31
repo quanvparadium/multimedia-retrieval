@@ -74,6 +74,14 @@ class VideoSearch:
             ORDER BY distance
             LIMIT :limit;
         """)
+        analysis_sql_query = text("""
+            EXPLAIN ANALYZE
+            SELECT *, (embedding <-> :query_vector) AS distance
+            FROM keyframes
+            WHERE "fileId" = :video_id
+            ORDER BY distance
+            LIMIT :limit;
+        """)
         
         query = payload['query']
         limit = payload['limit']
@@ -94,20 +102,78 @@ class VideoSearch:
                 }
                 begin_time = datetime.datetime.now()
                 result = db.execute(sql_query, params)
+                analysis = db.execute(analysis_sql_query, params).fetchall()
+                print("Analysis: ", analysis)
                 keyframes = result.fetchall()
                 print("Total time search: ", datetime.datetime.now() - begin_time)
 
-                current_kf = [get_result(kf) for kf in keyframes]
+                current_kf = [get_result(kf) for kf in keyframes if kf.distance <= 1.19]
                 all_keyframes = [*all_keyframes, *current_kf]
         except Exception as e:
             db.rollback()
-            raise e
+            print("Error: ", e)
+            return {
+                "message": "Search folders with text failed"
+            }        
         finally:
             db.close()
     
         print("ALL KEYFRAMES WITH TEXT SEARCH: ", all_keyframes)
         result_keyframes = sorted(all_keyframes, key= cosine_score)
         return result_keyframes
+    
+    @staticmethod
+    def query_all_folder_with_text(payload):
+        """
+            Input:
+                payload: dictionary
+                    - query
+                    - limit
+                    - user_id
+        """
+        # Định nghĩa câu lệnh SQL với placeholders
+        db = psg_manager.get_session()
+        
+        sql_query = text("""
+            SELECT *, (embedding <-> :query_vector) AS distance
+            FROM keyframes
+            WHERE "userId" = :user_id
+            ORDER BY distance
+            LIMIT :limit;
+        """)
+
+        query = payload['query']
+        limit = payload['limit']
+        user_id = payload['user_id']
+        
+        txt = BLIP_TEXT_PROCESSORS["eval"](query)
+        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
+        text_features = np.array(text_features).astype(float).flatten().tolist()
+        query_vector_str = f"[{','.join(map(str, text_features))}]"
+        
+        try:
+            params = {
+                "user_id": user_id,
+                "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
+                "limit": limit
+            }
+            begin_time = datetime.datetime.now()
+            result = db.execute(sql_query, params)
+                # analysis = db.execute(analysis_sql_query, params).fetchall()
+                # print("Analysis: ", analysis)
+            keyframes = result.fetchall()
+            print("Total time search: ", datetime.datetime.now() - begin_time)
+
+            current_kf = [get_result(kf) for kf in keyframes]
+            return current_kf
+        except Exception as e:
+            db.rollback()
+            print("Error: ", e)
+            return {
+                "message": "Search all folders by text failed!"
+            }
+        finally:
+            db.close()
     
     @staticmethod
     def query_folder_with_image(payload):
@@ -145,7 +211,10 @@ class VideoSearch:
                 all_keyframes = [*all_keyframes, *current_kf]
         except Exception as e:
             db.rollback()
-            raise e
+            print("Error: ", e)
+            return {
+                "message": "Search folders with image failed"
+            }
         finally:
             db.close()
     
@@ -153,3 +222,57 @@ class VideoSearch:
 
         result_keyframes = sorted(all_keyframes, key= cosine_score)
         return result_keyframes
+    
+    
+    @staticmethod
+    def query_all_folder_with_image(payload):
+        """
+            Input:
+                payload: dictionary
+                    - image_path
+                    - limit
+                    - user_id
+        """
+        # Định nghĩa câu lệnh SQL với placeholders
+        db = psg_manager.get_session()
+        
+        sql_query = text("""
+            SELECT *, (embedding <-> :query_vector) AS distance
+            FROM keyframes
+            WHERE "userId" = :user_id
+            ORDER BY distance
+            LIMIT :limit;
+        """)
+
+        raw_image = Image.open(payload['image_path']).convert('RGB')
+        limit = payload['limit']
+        user_id = payload['user_id']
+        
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
+        img_features = np.array(img_features).astype(float).flatten().tolist()
+        query_vector_str = f"[{','.join(map(str, img_features))}]"
+        
+        try:
+            params = {
+                "user_id": user_id,
+                "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
+                "limit": limit
+            }
+            begin_time = datetime.datetime.now()
+            result = db.execute(sql_query, params)
+                # analysis = db.execute(analysis_sql_query, params).fetchall()
+                # print("Analysis: ", analysis)
+            keyframes = result.fetchall()
+            print("Total time search: ", datetime.datetime.now() - begin_time)
+
+            current_kf = [get_result(kf) for kf in keyframes]
+            return current_kf
+        except Exception as e:
+            db.rollback()
+            print("Error: ", e)
+            return {
+                "message": "Search all folders with image failed!"
+            }
+        finally:
+            db.close()    

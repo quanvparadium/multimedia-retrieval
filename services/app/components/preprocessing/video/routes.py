@@ -58,7 +58,7 @@ def test_extract_keyframe(item: TestVideoItem):
         "store": item.store, # Local or S3 Storage
         "threshold": 0.1
     }
-    # result = VideoPreprocessing.test_indexing(payload)
+    result = VideoPreprocessing.test_indexing(payload)
     result = {
         "message": "Update soon ..."
     }

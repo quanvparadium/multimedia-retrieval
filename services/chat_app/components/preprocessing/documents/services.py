@@ -259,9 +259,9 @@ class DocumentServicesV2:
         db_session = psg_manager.get_session()
         rows_to_delete = db_session.query(PGDocument).filter_by(file_id= file_id).all()
         print(len(rows_to_delete))
-        for row in rows_to_delete:
-            db_session.delete(row)  
-            db_session.commit()  
+        # for row in rows_to_delete:
+        #     db_session.delete(row)  
+        #     db_session.commit()  
         
         # db_session.commit()    
         # delete_q = PGDocument.__table__.delete().where(Report.data == 'test')
