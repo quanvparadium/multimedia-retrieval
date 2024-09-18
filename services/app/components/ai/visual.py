@@ -11,6 +11,11 @@ print("LAVIS dir: ", lavis_dir)
 sys.path.append(lavis_dir)
 from lavis.models import load_model_and_preprocess
 
+print("\033[33mLoading OCR model ...\033[0m")
+import easyocr
+EASY_OCR = easyocr.Reader(['en'])
+print("\033[32mLoaded OCR model successfully! \033[0m")
+
 MODEL_TYPE = "base"
 print("\033[33mLoading BLIP model ...\033[0m")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

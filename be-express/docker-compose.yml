@@ -1,20 +1,68 @@
 services:
   postgres_db:
-    image:  pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16
     ports:
       - 5432:5432
     env_file:
       - env/postgres_db.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  postgres_db_1:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5433:5432
+    env_file:
+      - env/postgres_db.env
+    volumes:
+      - postgres_data_1:/var/lib/postgresql/meili_data
+    networks:
+      - app_network
+
+  postgres_db_2:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5434:5432
+    env_file:
+      - env/postgres_db.env
+    volumes:
+      - postgres_data_2:/var/lib/postgresql/data
+    networks:
+      - app_network
+
   mongodb:
-      image: mongo:latest
-      ports:
-        - "27017:27017"
-      env_file:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    env_file:
       - env/mongo_db.env
-      volumes:
-        - mongo_data:/data/db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app_network
+
+  meilisearch:
+    image: getmeili/meilisearch:nightly
+    environment:
+      - MEILI_ENV=development
+    volumes:
+      - meili_data:/meili_data
+    ports:
+      - "7700:7700"
+    restart: unless-stopped
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
+  postgres_data_1:
+  postgres_data_2:
   mongo_data:
+  meili_data:
+
+networks:
+  app_network:
+    driver: bridge
+    external: true

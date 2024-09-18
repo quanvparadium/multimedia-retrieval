@@ -5,6 +5,7 @@ import json
 from tqdm import tqdm
 import datetime
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
 from entities import Keyframe
@@ -16,7 +17,7 @@ from PIL import Image
 tf.compat.v1.disable_resource_variables()
 from .models.transnet import TransNetParams, TransNet
 from .models.transnet_utils import scenes_from_predictions
-from components.ai.visual import DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
+from components.ai.visual import EASY_OCR, DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
 from sqlalchemy import text
 import concurrent.futures
 
@@ -128,12 +129,11 @@ class VideoPreprocessing:
         V_WIDTH = 0
         V_HEIGHT = 0
         image_path = payload["file_path"]
-        print("Open image")
         with Image.open(image_path) as img:
             V_WIDTH, V_HEIGHT = img.size
-        print("Open image done")
             
         raw_image = Image.open(image_path)
+        ocr_text = raw_image.readtext(img, detail = 0)
         img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
         image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
         print("Get features with shape: ", image_features.shape)
@@ -146,6 +146,7 @@ class VideoPreprocessing:
             "width": int(V_WIDTH),
             "height": int(V_HEIGHT),
             "embedding": image_features,
+            "ocr": ocr_text if len(ocr_text) > 0 else None,
             "store": payload['store'],
             "address": image_path
         }
@@ -177,7 +178,10 @@ class VideoPreprocessing:
         """
         # Step 1: Check file if exists in database
         file_id = payload['file_id']
-        db = psg_manager.get_session()
+        print("User id: ", payload['user_id'])
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)
+        print("current session: ", psg_manager.db_urls[hashed_session])
         result = db.query(Keyframe).filter(Keyframe.fileId == file_id).all()
         if result:
             return {
@@ -286,6 +290,7 @@ class VideoPreprocessing:
                 "width": int(V_WIDTH),
                 "height": int(V_HEIGHT),
                 "embedding": seq_image_features,
+                "ocr": None,
                 "frame_number": kf_frame_number,
                 "frame_second": time_at_frame,
                 "byte_offset": target_byte_offset,
@@ -302,7 +307,7 @@ class VideoPreprocessing:
                 if isinstance(kf_result, dict):
                     return kf_result if "message" in kf_result else "Fail code"
             print(f"Extracted keyframe {kf_frame_number} to {kf_output_path}")
-        psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id)
+        psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id, user_id=payload['user_id'])
         psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
 
         print("Time embeded sequential: ", datetime.datetime.now() - begin_time)
@@ -315,7 +320,9 @@ class VideoPreprocessing:
 
     @staticmethod
     def create_keyframe(property):
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= property['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)     
+        print("Url current connect:", psg_manager.db_urls[hashed_session])   
         try:
             kf_data = Keyframe(
                 fileId = property['file_id'],
@@ -324,6 +331,7 @@ class VideoPreprocessing:
                 width = property['width'],
                 height = property['height'],
                 embedding=property['embedding'],
+                ocr=property['ocr'],
                 frame_number = property['frame_number'],
                 frame_second = property['frame_second'],
                 store = property['store'],
@@ -357,6 +365,7 @@ class VideoPreprocessing:
                 width = property['width'],
                 height = property['height'],
                 embedding=property['embedding'],
+                ocr=property['ocr'],
                 store = property['store'],
                 address= property['address'],
             )

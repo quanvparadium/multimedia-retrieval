@@ -1,4 +1,4 @@
-.env
+*.env
 *DS_Store
 .git
 __pycache__/
@@ -16,3 +16,4 @@ venv*/
 .python*
 app/data/
 data*/
+prepare*/

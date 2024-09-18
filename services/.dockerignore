@@ -4,3 +4,5 @@ app/
 repo/venv*/
 README.md
 venv*/
+chat*/
+test*/

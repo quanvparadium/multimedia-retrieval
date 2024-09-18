@@ -64,19 +64,19 @@ from sqlalchemy.sql import func
 from connections.postgres import psg_manager
 Base = psg_manager.Base
 
-class Data(Base):
-    __abstract__ = True
+# class Data(Base):
+#     __abstract__ = True
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    type = Column(String, nullable=False)
-    status = Column(String, nullable=False)
-    createdAt = Column(TIMESTAMP, server_default=func.now(), nullable=False)
-    updatedAt = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)
-    crawl = Column(Boolean, nullable=False, default=False)
-    fileName = Column(String, nullable=False)
-    size = Column(BigInteger, nullable=False)
-    store = Column(String, nullable=False)
-    address = Column(String, nullable=False)
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     type = Column(String, nullable=False)
+#     status = Column(String, nullable=False)
+#     createdAt = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+#     updatedAt = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)
+#     crawl = Column(Boolean, nullable=False, default=False)
+#     fileName = Column(String, nullable=False)
+#     size = Column(BigInteger, nullable=False)
+#     store = Column(String, nullable=False)
+#     address = Column(String, nullable=False)
 
 
 

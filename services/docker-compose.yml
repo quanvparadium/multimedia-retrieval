@@ -1,31 +1,46 @@
 version: '1.0.0'
 services:
-    postgres_db:
-        build:
-            dockerfile: ./Dockerfile.pg
-            context: .
-        ports:
-        - 5432:5432
-        env_file:
-        - postgres_db.env
-        volumes:
-        - postgres_data:/var/lib/postgresql/data
-        - ./init_pgvector.sql:/docker-entrypoint-initdb.d/init_pgvector.sql
+    # postgres_db:
+    #     build:
+    #         dockerfile: ./Dockerfile.pg
+    #         context: .
+    #     ports:
+    #     - 5432:5432
+    #     env_file:
+    #     - postgres_db.env
+    #     volumes:
+    #     - postgres_data:/var/lib/postgresql/data
+    #     - ./init_pgvector.sql:/docker-entrypoint-initdb.d/init_pgvector.sql
+        # networks:
+        #     - app_network               
     search:
         # platform: linux/amd64
         build:
             dockerfile: ./Dockerfile
             context: .
-        depends_on:
-            - postgres_db
+        # depends_on:
+        #     - postgres_db
+        #     - postgres_db_1
+        #     - postgres_db_2
         # environment:
         #     - DATABASE_URL=postgresql://quandatn:@:5432/mydatabase
         ports:
            - 4000:4000
         volumes:
             - ./app:/code/app
+        networks:
+            - app_network    
+            - test_app_network             
             # - ./repo/LAVIS:/code/repo/LAVIS
+     
 volumes:
-    postgres_data:
+    # postgres_data:
     app:
 
+networks:
+  app_network:
+    driver: bridge
+    external: true
+  test_app_network:
+    driver: bridge
+    external: true

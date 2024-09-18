@@ -25,7 +25,7 @@ RUN apt update \
 
 WORKDIR /code/repo/LAVIS
 
-RUN pip install --no-binary h5py h5py
+# RUN pip install --no-binary h5py h5py
 RUN pip install -e .
 
 WORKDIR /code
@@ -40,4 +40,4 @@ RUN pip install -r postenv.txt
 WORKDIR /code/app
 
 EXPOSE 4000
-CMD ["python", "app.py"]
+CMD ["pytest tests/test_image.py"]
