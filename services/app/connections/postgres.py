@@ -1,63 +1,3 @@
-# import os
-# import psycopg2
-# from psycopg2 import errors
-
-# class PostgresConnection:
-#     def __init__(self, database=None, user=None, password=None, host=None, port=None):
-#         self.database = database or os.getenv('POSTGRES_DB', 'testdatn')
-#         self.user = user or os.getenv('POSTGRES_USER', 'postgres')
-#         self.password = password or os.getenv('POSTGRES_PASSWORD', '')
-#         self.host = host or os.getenv('POSTGRES_HOST', 'localhost')
-#         self.port = port or os.getenv('POSTGRES_PORT', '5432')
-#         self.connection = None
-#         self.cursor = None
-
-#     def connect(self):
-#         try:
-#             self.connection = psycopg2.connect(
-#                 database=self.database,
-#                 user=self.user,
-#                 password=self.password,
-#                 host=self.host,
-#                 port=self.port
-#             )
-#             self.cursor = self.connection.cursor()
-#             print(f"Connected to Postgres database: {self.database}")
-#         except (Exception, psycopg2.Error) as error:
-#             print(f"Error connecting to Postgres database: {error}")
-
-#     def execute_query(self, query, params=None):
-#         try:
-#             self.cursor.execute(query, params)
-#             return self.cursor.fetchall()
-#         except (Exception, psycopg2.Error) as error:
-#             print(f"Error executing query: {error}")
-#             return None
-
-#     def commit(self):
-#         try:
-#             self.connection.commit()
-#         except (Exception, psycopg2.Error) as error:
-#             print(f"Error committing changes: {error}")
-
-#     def rollback(self):
-#         try:
-#             self.connection.rollback()
-#         except (Exception, psycopg2.Error) as error:
-#             print(f"Error rolling back changes: {error}")
-
-#     def close(self):
-#         try:
-#             if self.cursor:
-#                 self.cursor.close()
-#             if self.connection:
-#                 self.connection.close()
-#             print("Postgres connection closed.")
-#         except (Exception, psycopg2.Error) as error:
-#             print(f"Error closing Postgres connection: {error}")
-
-# psg_db = PostgresConnection()
-
 import os
 from sqlalchemy import create_engine, text, inspect, Index
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -134,11 +74,28 @@ class PostgresManager:
                 print("\033[32m>>> Pgvector extension is ready.\033[0m")
         except OperationalError as err:
             print(f"Error creating pgvector extension: {err}")
+            
+    def create_kw_index_by_user(self, table_name, user_id: str, type_index: str = "GIN"):
+        is_user_index_exists = self.index_exists(table_name=table_name, index_name=f'gin_idx_by_user_{user_id}', user_id= user_id)
+        if is_user_index_exists:
+            print(f"\033[32m>>> GIN Index embedding by user_id({user_id}) is EXISTED.\033[0m")
+            return None  
+        hashed_session = self.hash_session(user_id)
+        create_index_query = text(f""" CREATE INDEX gin_idx_by_user_{user_id} ON {table_name} USING GIN (to_tsvector('english', ocr) WHERE (\"userId\" = :user_id);""")         
+        try:
+            for idx, engine in enumerate(self.engines):
+                if idx == hashed_session:
+                    with engine.connect() as connection:
+                        connection.execute(create_index_query, {"user_id": str(user_id)})
+                        connection.commit()
+                    print(f"\033[32m>>> GIN Index embedding by user_id({user_id}) is created.\033[0m")
+        except OperationalError as err:
+            print(f"Error creating GIN index by user: {err}")              
 
     def create_index_by_user(self, table_name, user_id: str, type_index: str = "IVFFlat"):
         is_user_index_exists = self.index_exists(table_name=table_name, index_name=f'ivflat_idx_by_user_{user_id}', user_id= user_id)
         if is_user_index_exists:
-            print(f"\033[32m>>> Index embedding by user_id({user_id}) is EXISTED.\033[0m")
+            print(f"\033[32m>>> {type_index} Index embedding by user_id({user_id}) is EXISTED.\033[0m")
             return None
         hashed_session = self.hash_session(user_id)
         create_index_query = text(f""" CREATE INDEX ivflat_idx_by_user_{user_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"userId\" = :user_id);""") 
@@ -148,9 +105,9 @@ class PostgresManager:
                     with engine.connect() as connection:
                         connection.execute(create_index_query, {"user_id": str(user_id)})
                         connection.commit()
-                    print(f"\033[32m>>> Index embedding by user_id({user_id}) is created.\033[0m")
+                    print(f"\033[32m>>> {type_index} Index embedding by user_id({user_id}) is created.\033[0m")
         except OperationalError as err:
-            print(f"Error creating index by user: {err}")
+            print(f"Error creating {type_index} index by user: {err}")
 
     def create_index_by_video(self, table_name, file_id: str, user_id: str, type_index: str = "IVFFlat", ):
         is_file_index_exists = self.index_exists(table_name=table_name, index_name=f'ivflat_idx_by_video_{file_id}', user_id= user_id)

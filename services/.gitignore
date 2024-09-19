@@ -17,3 +17,5 @@ venv*/
 app/data/
 data*/
 prepare*/
+.venv*/
+ocr_app*/

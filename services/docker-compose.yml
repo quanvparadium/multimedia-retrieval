@@ -14,16 +14,21 @@ services:
         # networks:
         #     - app_network               
     search:
-        # platform: linux/amd64
+        platform: linux/amd64
         build:
             dockerfile: ./Dockerfile
             context: .
+        container_name: test_docker_search_services
         # depends_on:
         #     - postgres_db
         #     - postgres_db_1
         #     - postgres_db_2
         # environment:
         #     - DATABASE_URL=postgresql://quandatn:@:5432/mydatabase
+        deploy:
+            resources:
+                limits:
+                    memory: 4g        
         ports:
            - 4000:4000
         volumes:

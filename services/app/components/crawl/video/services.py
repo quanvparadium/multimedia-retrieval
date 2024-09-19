@@ -2,7 +2,10 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
-from entities import Video, User
+from entities import (
+    # Video, 
+    User
+)
 from .utils import get_seconds
 from dotenv import load_dotenv
 load_dotenv()
@@ -58,30 +61,30 @@ class VideoYoutubeCrawler:
         else:
             # video.title
             db = psg_manager.get_session()
-            try: 
-                user = db.query(User).filter(User.id == userId).first()
-                db_data = Video(
-                    author=video.author,
-                    format=".mp4",
-                    duration=get_seconds(video.duration),
-                    youtubeId=videoId,
-                    type="video", 
-                    status="In progress", 
-                    userId=user.id, 
-                    crawl=True,
-                    fileName=video.title,
-                    size=video.length,
-                    store="",
-                    address=res)
-                db.add(db_data)
-                db.commit()
-                db.refresh(db_data)
-                return db_data
-            except Exception as e:
-                db.rollback()
-                raise e
-            finally:
-                db.close()
+            # try: 
+            #     user = db.query(User).filter(User.id == userId).first()
+            #     db_data = Video(
+            #         author=video.author,
+            #         format=".mp4",
+            #         duration=get_seconds(video.duration),
+            #         youtubeId=videoId,
+            #         type="video", 
+            #         status="In progress", 
+            #         userId=user.id, 
+            #         crawl=True,
+            #         fileName=video.title,
+            #         size=video.length,
+            #         store="",
+            #         address=res)
+            #     db.add(db_data)
+            #     db.commit()
+            #     db.refresh(db_data)
+            #     return db_data
+            # except Exception as e:
+            #     db.rollback()
+            #     raise e
+            # finally:
+            #     db.close()
                 
     
         

@@ -5,7 +5,6 @@ import json
 from tqdm import tqdm
 import datetime
 
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
 from entities import Keyframe
@@ -17,7 +16,14 @@ from PIL import Image
 tf.compat.v1.disable_resource_variables()
 from .models.transnet import TransNetParams, TransNet
 from .models.transnet_utils import scenes_from_predictions
-from components.ai.visual import EASY_OCR, DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
+from components.ai.visual import (
+    DEVICE, 
+    BLIP_MODEL, 
+    BLIP_TEXT_PROCESSORS, 
+    BLIP_VIS_PROCESSORS
+)
+from components.ai.ocr_reader import EASY_OCR
+
 from sqlalchemy import text
 import concurrent.futures
 
@@ -27,12 +33,8 @@ DEFAULT_CHECKPOINT_PATH = "./models/transnet_model-F16_L3_S2_D256"
 params = TransNetParams()
 # Cách sửa, thêm đuôi meta vào chạy trước, sau đó xoá đi run lại
 params.CHECKPOINT_PATH = "../checkpoint/transnet_model-F16_L3_S2_D256"
-# params.set()
-# print("Input width: ", params.INPUT_WIDTH)
-# print("Input height: ", params.INPUT_HEIGHT)
 print("Initialize Transnet")
 net = TransNet(params)
-print("Initialize Transnet")
 
 """Add Database path"""
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -94,34 +96,23 @@ def process_video_concurency(kf_frame_number, video_path, file_id, user_id):
     frame_rate = get_frame_rate(video_path)
     V_WIDTH, V_HEIGHT = get_width_and_height(video_path)
     
-    
     kf_output_path = os.path.join(f'{keyframe_path}/keyframes/{file_id}', f"{file_id}_{kf_frame_number}.jpg")
-    ffmpeg_command = f"ffmpeg -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{kf_frame_number})'\" -vsync vfr -frames:v 1 {kf_output_path}"
+    ffmpeg_command = f"ffmpeg -y -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{kf_frame_number})'\" -vsync vfr -frames:v 1 {kf_output_path}"
     os.system(ffmpeg_command)
     target_byte_offset = get_frame_byte_offset(video_path=video_path, target_frame_index=kf_frame_number)
     time_at_frame = get_time_at_frame(frame_number=kf_frame_number, frame_rate=frame_rate)
     
     return True
-    # raw_image = Image.open(kf_output_path)
-    # img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-    # image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-    # print("Get features with shape: ", image_features.shape)
-    # image_features = np.array(image_features).astype(float).flatten().tolist()
+
+def ocr_detection(img_path):
+    import httpx
+    import asyncio
+    async def call(img_path):
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://localhost:4002/ocr", json={"file_path": img_path})
+            return response.json()
+    return asyncio.run(call(img_path))
     
-    # property = {
-    #     'file_id': file_id,
-    #     'user_id': user_id,
-    #     'format': 'jpg',
-    #     "width": int(V_WIDTH),
-    #     "height": int(V_HEIGHT),
-    #     "embedding": image_features,
-    #     "frame_number": kf_frame_number,
-    #     "frame_second": time_at_frame,
-    #     "byte_offset": target_byte_offset,
-    #     "store": 'local',
-    #     "address": kf_output_path
-    # }
-    # return property
 
 class VideoPreprocessing:
     @staticmethod
@@ -133,10 +124,9 @@ class VideoPreprocessing:
             V_WIDTH, V_HEIGHT = img.size
             
         raw_image = Image.open(image_path)
-        ocr_text = raw_image.readtext(img, detail = 0)
+        ocr_text = EASY_OCR.readtext(image_path, detail=0)
         img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
         image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-        print("Get features with shape: ", image_features.shape)
         image_features = np.array(image_features).astype(float).flatten().tolist()
                         
         property = {
@@ -152,14 +142,16 @@ class VideoPreprocessing:
         }
         img_result = VideoPreprocessing.create_image(property)
         if img_result is None:
-            # raise Exception(f"Keyframe {index} cannot be created")
             return {
                 "message": f"Image {image_path} cannot be created"
             }
         else:
-                if isinstance(img_result, dict):
-                    return img_result if "message" in img_result else "Fail code"
-        print(f"Saved and extracted image successfully!")  
+            if isinstance(img_result, dict):
+                return img_result if "message" in img_result else "Fail code"
+        print(f"Saved and extracted image successfully!")
+        psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+        psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+          
         return {
             "message": f"Saved and extracted image {image_path} successfully!"
         }      
@@ -178,10 +170,10 @@ class VideoPreprocessing:
         """
         # Step 1: Check file if exists in database
         file_id = payload['file_id']
-        print("User id: ", payload['user_id'])
+        # print("User id: ", payload['user_id'])
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
-        print("current session: ", psg_manager.db_urls[hashed_session])
+        # print("current session: ", psg_manager.db_urls[hashed_session])
         result = db.query(Keyframe).filter(Keyframe.fileId == file_id).all()
         if result:
             return {
@@ -217,56 +209,16 @@ class VideoPreprocessing:
         frame_rate = get_frame_rate(video_path)
         if not os.path.exists(f'{keyframe_path}/keyframes/{file_id}'):
             os.makedirs(f'{keyframe_path}/keyframes/{file_id}')
-        # for index in keyframe_indices:
-        #     kf_output_path = os.path.join(f'{keyframe_path}/keyframes/{file_id}', f"{file_id}_{index}.jpg")
-        #     ffmpeg_command = f"ffmpeg -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{index})'\" -vsync vfr -frames:v 1 {kf_output_path}"
-        #     os.system(ffmpeg_command)
-        #     print(type(index))
-        #     print(type(V_WIDTH))
-        #     target_byte_offset = get_frame_byte_offset(video_path=video_path, target_frame_index=index)
-        #     time_at_frame = get_time_at_frame(frame_number=index, frame_rate=frame_rate)
-        #     print(f"Time at frame {index}: {time_at_frame} seconds")
-            
-        #     raw_image = Image.open(kf_output_path)
-        #     img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-        #     image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-        #     print("Get features with shape: ", image_features.shape)
-        #     image_features = np.array(image_features).astype(float).flatten().tolist()
-            
-        #     property = {
-        #         'file_id': payload['file_id'],
-        #         'user_id': payload['user_id'],
-        #         'format': 'jpg',
-        #         "width": int(V_WIDTH),
-        #         "height": int(V_HEIGHT),
-        #         "embedding": image_features,
-        #         "frame_number": index,
-        #         "frame_second": time_at_frame,
-        #         "byte_offset": target_byte_offset,
-        #         "store": payload['store'],
-        #         "address": kf_output_path
-        #     }
-            
-        #     kf_result = VideoPreprocessing.create_keyframe(property)
-        #     if kf_result is None:
-        #         # raise Exception(f"Keyframe {index} cannot be created")
-        #         return {
-        #             "message": f"Keyframe {index} cannot be created"
-        #         }
-        #     else:
-        #         if isinstance(kf_result, dict):
-        #             return kf_result if "message" in kf_result else "Fail code"
-        #     print(f"Extracted keyframe {index} to {kf_output_path}")
 
         # Step 3: Parallel save keyframe into storage
         kf_output_paths = [os.path.join(f'{keyframe_path}/keyframes/{file_id}', f"{file_id}_{kf_frame_number}.jpg") for kf_frame_number in keyframe_indices]
-        ffmpeg_commands = [f"ffmpeg -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{kf_frame_number})'\" -vsync vfr -frames:v 1 {kf_output_path}" for kf_frame_number, kf_output_path in zip(keyframe_indices, kf_output_paths)]
-        print(ffmpeg_commands)
+        ffmpeg_commands = [f"ffmpeg -y -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{kf_frame_number})'\" -vsync vfr -frames:v 1 {kf_output_path}" for kf_frame_number, kf_output_path in zip(keyframe_indices, kf_output_paths)]
+        # print(ffmpeg_commands)
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(os.system, command) for command in ffmpeg_commands]
             results = [future.result() for future in futures]
-        print(results)
+        # print(results)
         
         print("Start sequential extract embedding")
         begin_time = datetime.datetime.now()
@@ -278,6 +230,7 @@ class VideoPreprocessing:
             
             # Extract embedding
             seq_raw_image = Image.open(kf_output_path)
+            ocr_text = EASY_OCR.readtext(kf_output_path, detail=0)
             seq_img = BLIP_VIS_PROCESSORS["eval"](seq_raw_image).unsqueeze(0).to(DEVICE)
             seq_image_features = BLIP_MODEL.encode_image(seq_img).detach().cpu().numpy()
             print("Get features with shape: ", seq_image_features.shape)
@@ -290,7 +243,7 @@ class VideoPreprocessing:
                 "width": int(V_WIDTH),
                 "height": int(V_HEIGHT),
                 "embedding": seq_image_features,
-                "ocr": None,
+                "ocr": ocr_text if len(ocr_text) > 0 else None,
                 "frame_number": kf_frame_number,
                 "frame_second": time_at_frame,
                 "byte_offset": target_byte_offset,
@@ -307,7 +260,9 @@ class VideoPreprocessing:
                 if isinstance(kf_result, dict):
                     return kf_result if "message" in kf_result else "Fail code"
             print(f"Extracted keyframe {kf_frame_number} to {kf_output_path}")
+            
         psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id, user_id=payload['user_id'])
+        psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
         psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
 
         print("Time embeded sequential: ", datetime.datetime.now() - begin_time)
@@ -322,7 +277,7 @@ class VideoPreprocessing:
     def create_keyframe(property):
         hashed_session = psg_manager.hash_session(user_id= property['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)     
-        print("Url current connect:", psg_manager.db_urls[hashed_session])   
+        # print("Url current connect:", psg_manager.db_urls[hashed_session])   
         try:
             kf_data = Keyframe(
                 fileId = property['file_id'],
@@ -350,7 +305,8 @@ class VideoPreprocessing:
             
     @staticmethod
     def create_image(property):
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= property['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)          
         result = db.query(Keyframe).filter(Keyframe.fileId == property['file_id']).all()
         if (result):
             print("Image is existed")

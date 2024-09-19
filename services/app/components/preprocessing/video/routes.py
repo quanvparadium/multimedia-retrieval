@@ -26,15 +26,6 @@ class TestVideoItem(BaseModel):
     folder_path: str
     file_id: str
 
-# @videoPreprocessRouter.get('/{keyframeId}/')
-# def status(keyframeId: str):
-#     property = VideoPreprocessing.get_video_properties(keyframeId)
-#     print("Preprocessing result: ", property)
-#     status = "In processing"
-#     return {
-#         "status": status
-#     }
-
 @videoPreprocessRouter.post('/video')
 def extract_keyframe(item: VideoItem):
     print("Processing video ...")
@@ -64,6 +55,8 @@ def test_extract_keyframe(item: TestVideoItem):
     }
     return result    
 
+########IMAGE SERVICES##########
+
 @videoPreprocessRouter.post('/image')
 def extract_image(item: VideoItem):
     print("Processing image ...")
@@ -76,6 +69,7 @@ def extract_image(item: VideoItem):
     }
     result = VideoPreprocessing.extract_image(payload)
     return result
+
 
 
 # @videoPreprocessRouter.post('/{type}/')
