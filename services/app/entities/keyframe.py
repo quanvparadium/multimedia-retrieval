@@ -11,8 +11,8 @@ class Keyframe(psg_manager.Base):
     __tablename__ = 'keyframes'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    fileId = Column(String, nullable=False)
-    userId = Column(String, nullable=False)
+    file_id = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
     format = Column(String, nullable=False)
     
     width = Column(Integer, nullable=False)

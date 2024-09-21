@@ -12,7 +12,7 @@ from components.ai.visual import DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_
 
 def get_result(kf):
     return {
-        "fileId": kf.fileId,
+        "file_id": kf.file_id,
         "byte_offset": kf.byte_offset,
         "keyframeId": kf.id,
         "cosine_score": kf.distance,
@@ -28,22 +28,23 @@ class VideoSearch:
     def query_video(payload): 
         query = payload['query']
         limit = payload['limit']
-        fileId = payload['fileId']
+        file_id = payload['file_id']
         txt = BLIP_TEXT_PROCESSORS["eval"](query)
         text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
         text_features = np.array(text_features).astype(float).flatten().tolist()
         
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)  
         try:
             query_vector_str = f"[{','.join(map(str, text_features))}]"
             sql_query = text(f"""
                 SELECT *, (embedding <=> :query_vector) AS distance
                 FROM keyframes
-                WHERE "fileId" = :video_id
+                WHERE "file_id" = :video_id
                 ORDER BY distance 
                 LIMIT :limit;
             """)
-            kf_res = db.execute(sql_query, {'video_id': fileId, 'query_vector': query_vector_str, 'limit': limit}).fetchall()
+            kf_res = db.execute(sql_query, {'video_id': file_id, 'query_vector': query_vector_str, 'limit': limit}).fetchall()
             for kf in kf_res:
                 print("Index ", kf.id, "- Address: ", kf.address )
                 print(kf)
@@ -65,12 +66,13 @@ class VideoSearch:
     @staticmethod
     def query_folder_with_text(payload):
         # Định nghĩa câu lệnh SQL với placeholders
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)  
         
         sql_query = text("""
             SELECT *, (embedding <-> :query_vector) AS distance
             FROM keyframes
-            WHERE "fileId" = :video_id
+            WHERE "file_id" = :video_id
             ORDER BY distance
             LIMIT :limit;
         """)
@@ -78,7 +80,7 @@ class VideoSearch:
             EXPLAIN ANALYZE
             SELECT *, (embedding <-> :query_vector) AS distance
             FROM keyframes
-            WHERE "fileId" = :video_id
+            WHERE "file_id" = :video_id
             ORDER BY distance
             LIMIT :limit;
         """)
@@ -132,12 +134,13 @@ class VideoSearch:
                     - user_id
         """
         # Định nghĩa câu lệnh SQL với placeholders
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)  
         
         sql_query = text("""
             SELECT *, (embedding <-> :query_vector) AS distance
             FROM keyframes
-            WHERE "userId" = :user_id
+            WHERE "user_id" = :user_id
             ORDER BY distance
             LIMIT :limit;
         """)
@@ -178,12 +181,13 @@ class VideoSearch:
     @staticmethod
     def query_folder_with_image(payload):
         # Định nghĩa câu lệnh SQL với placeholders
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)  
         
         sql_query = text("""
             SELECT *, (embedding <-> :query_vector) AS distance
             FROM keyframes
-            WHERE "fileId" = :video_id
+            WHERE "file_id" = :video_id
             ORDER BY distance
             LIMIT :limit;
         """)
@@ -234,12 +238,13 @@ class VideoSearch:
                     - user_id
         """
         # Định nghĩa câu lệnh SQL với placeholders
-        db = psg_manager.get_session()
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)  
         
         sql_query = text("""
             SELECT *, (embedding <-> :query_vector) AS distance
             FROM keyframes
-            WHERE "userId" = :user_id
+            WHERE "user_id" = :user_id
             ORDER BY distance
             LIMIT :limit;
         """)
@@ -276,3 +281,45 @@ class VideoSearch:
             }
         finally:
             db.close()    
+            
+class OCRSearch:
+    @staticmethod
+    def query_video(payload):          
+        ocr = payload['ocr']
+        limit = payload['limit']
+        file_id = payload['file_id']  
+        user_id = payload['user_id']  
+        
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)
+        sql_query = text(f"""
+            SELECT *, ts_rank(to_tsvector('english', ocr), plainto_tsquery('english', :search_term)) AS kw_score
+            FROM keyframes
+            WHERE "user_id" = :user_id
+            AND "file_id" = :file_id
+            AND to_tsvector('english', ocr) @@ plainto_tsquery('english', :search_term)
+            ORDER BY kw_score DESC
+            LIMIT :limit;
+        """)        
+        kf_ocr_res = db.execute(sql_query, {
+            'user_id': user_id,
+            'file_id': file_id,
+            'search_term': ocr,
+            'limit': limit
+        }).fetchall()
+        for kf_ocr in kf_ocr_res:
+            print(kf_ocr.kw_score)
+        print("LENGTH OCR RESULT: ", len(kf_ocr_res))  
+        print("OCR RESULT: ", kf_ocr_res)
+        return kf_ocr_res
+                
+        return {
+            "message": "Search OCR successfully"
+        }   
+             
+class EnsembleSearch:
+    @staticmethod
+    def hybrid_search(ranker_one, ranker_two, output_top_k = 5):
+        assert len(ranker_one) >= len(ranker_two), "Ranker one results must be greater than ranker two results"
+        return ranker_one
+            

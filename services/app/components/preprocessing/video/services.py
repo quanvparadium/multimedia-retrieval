@@ -4,6 +4,7 @@ import subprocess
 import json
 from tqdm import tqdm
 import datetime
+from typing import List
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
@@ -104,6 +105,26 @@ def process_video_concurency(kf_frame_number, video_path, file_id, user_id):
     
     return True
 
+def extend_keyframe(array: List[str]):
+    size = len(array)
+    if size <= 0:
+        return array
+    
+    new_array = [array[0]]
+    for i in range(len(array) - 1):
+        a1 = array[i]
+        a2 = array[i + 1]
+            
+        # Chèn hai số mới chia đều khoảng cách
+        new_array.append((2 * a1 + a2) // 3)
+        new_array.append((a1 + 2 * a2) // 3)
+        
+        # Thêm số a2 (số thứ hai trong cặp)
+        new_array.append(a2)
+        
+    return new_array        
+    
+
 def ocr_detection(img_path):
     import httpx
     import asyncio
@@ -174,7 +195,7 @@ class VideoPreprocessing:
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
         # print("current session: ", psg_manager.db_urls[hashed_session])
-        result = db.query(Keyframe).filter(Keyframe.fileId == file_id).all()
+        result = db.query(Keyframe).filter(Keyframe.file_id == file_id).all()
         if result:
             return {
                 "message": "Video is existed"
@@ -202,9 +223,15 @@ class VideoPreprocessing:
         keyframe_indices = []
         for idx, scene in enumerate(scenes):
             print(f"Frame {idx} - Scene range: ", scene)
-            keyframe_indices.append(int(scene[0]))
-            keyframe_indices.append(int(scene[1]))
+            main_scene = (int(scene[0]) + int(scene[1])) // 2
+            # Only push 1 scene, not using 2 border scene because cause blur
+            keyframe_indices.append(main_scene)
+            # keyframe_indices.append(int(scene[0]))
+            # keyframe_indices.append(int(scene[1]))
         print(predictions.shape)
+        print("Length of index before extending: ", len(keyframe_indices))
+        keyframe_indices = extend_keyframe(keyframe_indices)
+        print("Length of index after extending: ", len(keyframe_indices))
         
         frame_rate = get_frame_rate(video_path)
         if not os.path.exists(f'{keyframe_path}/keyframes/{file_id}'):
@@ -280,8 +307,8 @@ class VideoPreprocessing:
         # print("Url current connect:", psg_manager.db_urls[hashed_session])   
         try:
             kf_data = Keyframe(
-                fileId = property['file_id'],
-                userId = property['user_id'],
+                file_id = property['file_id'],
+                user_id = property['user_id'],
                 format = property['format'],
                 width = property['width'],
                 height = property['height'],
@@ -307,7 +334,7 @@ class VideoPreprocessing:
     def create_image(property):
         hashed_session = psg_manager.hash_session(user_id= property['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)          
-        result = db.query(Keyframe).filter(Keyframe.fileId == property['file_id']).all()
+        result = db.query(Keyframe).filter(Keyframe.file_id == property['file_id']).all()
         if (result):
             print("Image is existed")
             return {
@@ -315,8 +342,8 @@ class VideoPreprocessing:
             }
         try:
             img_data = Keyframe(
-                fileId = property['file_id'],
-                userId = property['user_id'],
+                file_id = property['file_id'],
+                user_id = property['user_id'],
                 format = property['format'],
                 width = property['width'],
                 height = property['height'],
@@ -411,7 +438,7 @@ class VideoPreprocessing:
         # create_index_query = text(f"""
         #     CREATE INDEX IF NOT EXISTS flat_idx 
         #     ON keyframes ((embedding::vector(256)) vector_cosine_ops) 
-        #     WHERE (keyframes.\"fileId\" = :video_id);
+        #     WHERE (keyframes.\"file_id\" = :video_id);
         # """)
         can_be_index = False
         # if (count > 10000) and (count < 100000):
@@ -420,11 +447,11 @@ class VideoPreprocessing:
             #     CREATE INDEX IF NOT EXISTS ivflat_idx 
             #     ON keyframes USING ivfflat ((embedding::vector(256)) vector_cosine_ops) 
             #     WITH (lists = 10) 
-            #     WHERE (keyframes.\"fileId\" = :video_id);
+            #     WHERE (keyframes.\"file_id\" = :video_id);
             # """) 
             create_index_query = text(f"""
                 CREATE INDEX ivfflat_idx_video_{videoId} ON keyframes USING ivfflat (embedding) WITH (lists = 10) 
-                WHERE (keyframes.\"fileId\" = :video_id);
+                WHERE (keyframes.\"file_id\" = :video_id);
             """) 
             can_be_index = True
         elif (count >= 100000):
@@ -432,7 +459,7 @@ class VideoPreprocessing:
                 CREATE INDEX IF NOT EXISTS ivflat_idx 
                 ON keyframes USING ivfflat ((embedding::vector(256)) vector_cosine_ops) 
                 WITH (lists = 1000) 
-                WHERE (keyframes.\"fileId\" = :video_id);
+                WHERE (keyframes.\"file_id\" = :video_id);
             """)
             can_be_index = True
         if can_be_index:   

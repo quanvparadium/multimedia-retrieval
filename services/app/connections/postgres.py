@@ -81,7 +81,7 @@ class PostgresManager:
             print(f"\033[32m>>> GIN Index embedding by user_id({user_id}) is EXISTED.\033[0m")
             return None  
         hashed_session = self.hash_session(user_id)
-        create_index_query = text(f""" CREATE INDEX gin_idx_by_user_{user_id} ON {table_name} USING GIN (to_tsvector('english', ocr) WHERE (\"userId\" = :user_id);""")         
+        create_index_query = text(f""" CREATE INDEX gin_idx_by_user_{user_id} ON {table_name} USING GIN (to_tsvector('english', ocr)) WHERE (\"user_id\" = :user_id);""")         
         try:
             for idx, engine in enumerate(self.engines):
                 if idx == hashed_session:
@@ -98,7 +98,7 @@ class PostgresManager:
             print(f"\033[32m>>> {type_index} Index embedding by user_id({user_id}) is EXISTED.\033[0m")
             return None
         hashed_session = self.hash_session(user_id)
-        create_index_query = text(f""" CREATE INDEX ivflat_idx_by_user_{user_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"userId\" = :user_id);""") 
+        create_index_query = text(f""" CREATE INDEX ivflat_idx_by_user_{user_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"user_id\" = :user_id);""") 
         try:
             for idx, engine in enumerate(self.engines):
                 if idx == hashed_session:
@@ -114,7 +114,7 @@ class PostgresManager:
         if is_file_index_exists:
             print(f"\033[32m>>> Index embedding by file_id({file_id}) is EXISTED.\033[0m")
             return None
-        create_index_query = text(f""" CREATE INDEX ivflat_idx_by_video_{file_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"fileId\" = :file_id);""") 
+        create_index_query = text(f""" CREATE INDEX ivflat_idx_by_video_{file_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"file_id\" = :file_id);""") 
         try:
             for engine in self.engines:
                 with engine.connect() as connection:
@@ -134,7 +134,7 @@ class PostgresManager:
             sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
             from entities import Keyframe
             for engine in self.engines:
-                self.create_index_if_not_exists(engine, 'keyframes', 'idx_user_id_embedding', Keyframe.userId, Keyframe.embedding)
+                self.create_index_if_not_exists(engine, 'keyframes', 'idx_user_id_embedding', Keyframe.user_id, Keyframe.embedding)
                 print("Created Index for Keyframe table!")
         print("Migrate done!")
 
