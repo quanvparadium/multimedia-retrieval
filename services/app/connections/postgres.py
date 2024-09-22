@@ -115,14 +115,16 @@ class PostgresManager:
             print(f"\033[32m>>> Index embedding by file_id({file_id}) is EXISTED.\033[0m")
             return None
         create_index_query = text(f""" CREATE INDEX ivflat_idx_by_video_{file_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"file_id\" = :file_id);""") 
+        hashed_session = self.hash_session(user_id)
         try:
-            for engine in self.engines:
-                with engine.connect() as connection:
-                    connection.execute(create_index_query, {"file_id": str(file_id)})
-                    connection.commit()
-                print(f"\033[32m>>> Index embedding by file_id({file_id}) is created.\033[0m")
+            for idx, engine in enumerate(self.engines):
+                if idx == hashed_session:                
+                    with engine.connect() as connection:
+                        connection.execute(create_index_query, {"file_id": str(file_id)})
+                        connection.commit()
+                    print(f"\033[32m>>> Index embedding by file_id({file_id}) is created.\033[0m")
         except OperationalError as err:
-            print(f"Error creating index by user: {err}")            
+            print(f"Error creating {type_index} index by user: {err}")            
 
     def create_tables(self, is_indexing = False):
         print("Migrating...")
@@ -159,9 +161,9 @@ class PostgresManager:
             self.Base.metadata.drop_all(engine)
 
     def get_session(self, hased_session = 0):
-        # POrt 5432: session 0
-        # POrt 5433: session 1
-        # POrt 5434: session 2
+        # Port 5432: session 0
+        # Port 5433: session 1
+        # Port 5434: session 2
         return self.Session[hased_session]()
 
     def close_session(self, hased_session = 0):

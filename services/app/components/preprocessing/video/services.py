@@ -5,18 +5,22 @@ import json
 from tqdm import tqdm
 import datetime
 from typing import List
+import numpy as np
+import ffmpeg
+from PIL import Image
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
 from entities import Keyframe
 
-import numpy as np
-import ffmpeg
 import tensorflow as tf
-from PIL import Image
 tf.compat.v1.disable_resource_variables()
 from .models.transnet import TransNetParams, TransNet
 from .models.transnet_utils import scenes_from_predictions
+
+from sqlalchemy import text, and_
+import concurrent.futures
+
 from components.ai.visual import (
     DEVICE, 
     BLIP_MODEL, 
@@ -24,10 +28,7 @@ from components.ai.visual import (
     BLIP_VIS_PROCESSORS
 )
 from components.ai.ocr_reader import EASY_OCR
-
-from sqlalchemy import text
-import concurrent.futures
-
+from config.status import HTTPSTATUS
 
 DEFAULT_CHECKPOINT_PATH = "./models/transnet_model-F16_L3_S2_D256"
 
@@ -138,6 +139,33 @@ def ocr_detection(img_path):
 class VideoPreprocessing:
     @staticmethod
     def extract_image(payload):
+        """
+            payload: dictionary
+                - user_id: str (Must be convert into integer)
+                - file_id: str
+                - file_path: str
+                - store: str
+                - format: str
+            
+            Output:
+            {
+                "status_code": 200/202/404/400/..
+                "message": "...",
+                
+            }
+        """
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)
+        
+        user_id = payload['user_id']
+        file_id = payload['file_id']        
+        result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
+        if len(result) > 0:
+            return {
+                "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
+                "message": "Input data existed in database."
+            }
+        
         V_WIDTH = 0
         V_HEIGHT = 0
         image_path = payload["file_path"]
@@ -162,18 +190,23 @@ class VideoPreprocessing:
             "address": image_path
         }
         img_result = VideoPreprocessing.create_image(property)
-        if img_result is None:
+        if img_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
             return {
-                "message": f"Image {image_path} cannot be created"
+                "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                "message": f"Image {image_path} cannot be created. Please check again request body!"
             }
         else:
-            if isinstance(img_result, dict):
-                return img_result if "message" in img_result else "Fail code"
+            if img_result['status_code'] == HTTPSTATUS.UNPROCESSABLE_ENTITY.code():
+                return {
+                    "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
+                    "message": f"File_id({file_id}) should be unique because another 'user_id' has the same file_id."
+                }
         print(f"Saved and extracted image successfully!")
         psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
         psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
           
         return {
+            "status_code": HTTPSTATUS.CREATED.code(),
             "message": f"Saved and extracted image {image_path} successfully!"
         }      
         
@@ -191,15 +224,25 @@ class VideoPreprocessing:
         """
         # Step 1: Check file if exists in database
         file_id = payload['file_id']
+        user_id = payload['user_id']
         # print("User id: ", payload['user_id'])
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
         # print("current session: ", psg_manager.db_urls[hashed_session])
-        result = db.query(Keyframe).filter(Keyframe.file_id == file_id).all()
-        if result:
+        result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
+        if len(result) > 0:
             return {
-                "message": "Video is existed"
+                "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
+                "message": "Input data existed in database."
             }
+            
+        result = db.query(Keyframe).filter(Keyframe.file_id == file_id).all()
+        if (len(result) > 0):
+            # print("Image is existed")
+            return {
+                "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
+                "message": f"File_id({file_id}) should be unique because another 'user_id' has the same file_id." 
+            }            
             
         # Step 2: Detect keyframes in video
         video_path = payload['file_path']        
@@ -229,6 +272,7 @@ class VideoPreprocessing:
             # keyframe_indices.append(int(scene[0]))
             # keyframe_indices.append(int(scene[1]))
         print(predictions.shape)
+        
         print("Length of index before extending: ", len(keyframe_indices))
         keyframe_indices = extend_keyframe(keyframe_indices)
         print("Length of index after extending: ", len(keyframe_indices))
@@ -278,14 +322,11 @@ class VideoPreprocessing:
                 "address": kf_output_path
             }
             kf_result = VideoPreprocessing.create_keyframe(property)
-            if kf_result is None:
-                # raise Exception(f"Keyframe {index} cannot be created")
+            if kf_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
                 return {
-                    "message": f"Keyframe {kf_frame_number} cannot be created"
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": f"Keyframe {kf_frame_number} cannot be created. Please check again request body!"
                 }
-            else:
-                if isinstance(kf_result, dict):
-                    return kf_result if "message" in kf_result else "Fail code"
             print(f"Extracted keyframe {kf_frame_number} to {kf_output_path}")
             
         psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id, user_id=payload['user_id'])
@@ -293,10 +334,11 @@ class VideoPreprocessing:
         psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
 
         print("Time embeded sequential: ", datetime.datetime.now() - begin_time)
-
         print("Keyframes extracted and saved successfully.")
+        
         return {
-            "message": "Keyframes extracted and saved successfully."
+            "status_code": HTTPSTATUS.CREATED.code(),
+            "message": f"Keyframes of video({file_id}) extracted and saved successfully."
         }
 
 
@@ -323,10 +365,16 @@ class VideoPreprocessing:
             db.add(kf_data)
             db.commit()
             db.refresh(kf_data)
-            return kf_data
+            return {
+                "status_code": HTTPSTATUS.CREATED.code()
+            }            
+            # return kf_data
         except Exception as e:
             db.rollback()
-            raise e
+            return {
+                "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                "error": str(e)
+            }
         finally:
             db.close()
             
@@ -335,10 +383,10 @@ class VideoPreprocessing:
         hashed_session = psg_manager.hash_session(user_id= property['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)          
         result = db.query(Keyframe).filter(Keyframe.file_id == property['file_id']).all()
-        if (result):
-            print("Image is existed")
+        if (len(result) > 0):
+            # print("Image is existed")
             return {
-                "message": "Image is existed"
+                "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code()
             }
         try:
             img_data = Keyframe(
@@ -355,10 +403,15 @@ class VideoPreprocessing:
             db.add(img_data)
             db.commit()
             db.refresh(img_data)
-            return img_data
+            return {
+                "status_code": HTTPSTATUS.CREATED.code()
+            }
         except Exception as e:
             db.rollback()
-            raise e
+            return {
+                "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                "error": str(e)
+            }
         finally:
             db.close()            
 
