@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import datetime
 from typing import List
-from .utils import get_rank, get_result, cosine_score
+from .utils import get_rank, get_result, cosine_score, kw_score
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from connections.postgres import psg_manager
@@ -14,18 +14,50 @@ from PIL import Image
 from components.ai.visual import DEVICE, BLIP_MODEL, BLIP_TEXT_PROCESSORS, BLIP_VIS_PROCESSORS
 from config.status import HTTPSTATUS
 
-
+class DatabaseServices:
+    @staticmethod
+    def is_user_exist(user_id: str):
+        hashed_session = psg_manager.hash_session(user_id= user_id)
+        db = psg_manager.get_session(hased_session= hashed_session)
+            
+        result = db.query(Keyframe).filter(Keyframe.user_id == user_id).all()
+        if len(result) == 0:
+            return False
+        return True
     
-
-# class DBSearch:
-#     @staticmethod
-#     def check_exists_user_and_file():
-#         result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
-#         if len(result) > 0:
-#             return {
-#                 "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
-#                 "message": "Input data existed in database."
-#             } 
+    @staticmethod
+    def is_file_exist(user_id: str, file_id: str):
+        hashed_session = psg_manager.hash_session(user_id= user_id)
+        db = psg_manager.get_session(hased_session= hashed_session)
+            
+        result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
+        if len(result) == 0:
+            return False
+        return True  
+    
+    @staticmethod
+    def is_file_exist_in_other_users(user_id: str, file_id: str):
+        hashed_session = psg_manager.hash_session(user_id= user_id)
+        db = psg_manager.get_session(hased_session= hashed_session)
+            
+        result = db.query(Keyframe).filter(Keyframe.file_id == file_id).all()
+        is_file_exists_in_an_user = (len(result) > 0)
+        is_file_exists_in_specific_user = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
+        if (is_file_exists_in_specific_user == False) and (is_file_exists_in_an_user == True): 
+            print("File_id is existed but not belongs to input user_id")
+            return True
+        return False
+    
+    
+    @staticmethod
+    def is_valid_user(user_id: str):
+        try:
+            int(user_id)
+            return True
+        except:
+            return False
+            
+        
 
 class VideoSearch:        
     @staticmethod
@@ -47,7 +79,6 @@ class VideoSearch:
         limit = payload['limit']
         file_id = payload['file_id']
         user_id = payload['user_id']
-        
         
         txt = BLIP_TEXT_PROCESSORS["eval"](query)
         text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
@@ -84,8 +115,12 @@ class VideoSearch:
                     "result": {
                         "data": [{
                             "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
-                            "Address": kf.address,
-                            "Cosine_distance": kf.distance,
+                            "file_id": kf.file_id,
+                            "byte_offset": kf.byte_offset,
+                            "keyframe_id": kf.id,
+                            "cosine_score": kf.distance,
+                            "frame_number": kf.frame_number,
+                            "frame_second": kf.frame_second,                           
                             "Rank_score": ranker[idx]
                         } for idx, kf in enumerate(kf_res)]
                     }
@@ -103,7 +138,68 @@ class VideoSearch:
             }
         finally:
             db.close()
-    
+   
+    @staticmethod
+    def query_folder_by_text(payload):
+        """
+            Input: 
+                payload: dictionary
+                    - query: str
+                    - limit: int
+                    - files: List[str]
+                    - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+            
+            Description: Search specific folder by user query input
+        """    
+        query = payload['query']
+        limit = payload['limit']
+        user_id = payload['user_id']
+        files = payload['files']         
+        
+        for file_id in files:
+            is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
+            if is_valid == False:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"File_id({file_id}) of user({user_id}) may not existed."
+                }    
+        
+        all_keyframes = []
+        for file_id in files:                
+            payload_per_file = {
+                "query": query,
+                "limit": limit,
+                "file_id": file_id,
+                "user_id": user_id
+            }
+            result = VideoSearch.query_video(payload= payload_per_file)
+            if result['status_code'] == HTTPSTATUS.OK.code():
+                data = result['result']['data']
+                current_kf = [kf for kf in data if kf['cosine_score'] <= 1.19]
+                all_keyframes = [*all_keyframes, *current_kf]
+            else:
+                print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
+        return {
+            "status_code": HTTPSTATUS.OK.code(),
+            "message": "Semantic folder search successfully!",
+            "count": len(all_keyframes),
+            "result": {
+                "data": sorted(all_keyframes, key=cosine_score)
+            }
+        }
+
+                
+        
+   
+   
+   
+class OldVideoSearch: 
     @staticmethod
     def query_folder_with_text(payload):
         # Định nghĩa câu lệnh SQL với placeholders
@@ -332,14 +428,7 @@ class OCRSearch:
         user_id = payload['user_id']  
         
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
-        db = psg_manager.get_session(hased_session= hashed_session)
-        
-        result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
-        if len(result) > 0:
-            return {
-                "status_code": HTTPSTATUS.UNPROCESSABLE_ENTITY.code(),
-                "message": "Input data existed in database."
-            }        
+        db = psg_manager.get_session(hased_session= hashed_session)    
       
         sql_query = text(f"""
             SELECT *, ts_rank(to_tsvector('simple', ocr), to_tsquery('simple', :search_term || ':*')) AS kw_score
@@ -358,12 +447,7 @@ class OCRSearch:
             'limit': limit
         }).fetchall()
         
-        # for kf_ocr in kf_ocr_res:
-        #     print(kf_ocr.kw_score)
-        # print("LENGTH OCR RESULT: ", len(kf_ocr_res))  
-        # print("OCR RESULT: ", kf_ocr_res)
         if len(kf_ocr_res) > 0:
-            print("Return: ", [kf.address for kf in kf_ocr_res])
             score_kf = [kf.kw_score for kf in kf_ocr_res]
             ranker = get_rank(score_kf)
             return {
@@ -372,8 +456,12 @@ class OCRSearch:
                 "result": {
                     "data": [{
                         "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
-                        "Address": kf.address,
-                        "TF_IDF score": kf.kw_score,
+                        "file_id": kf.file_id,
+                        "byte_offset": kf.byte_offset,
+                        "keyframe_id": kf.id,
+                        "TF_IDF_score": kf.kw_score,
+                        "frame_number": kf.frame_number,
+                        "frame_second": kf.frame_second,                         
                         "Rank_score": ranker[idx]
                     } for idx, kf in enumerate(kf_ocr_res)]
                 }
@@ -382,7 +470,62 @@ class OCRSearch:
             return {
                 "status_code": HTTPSTATUS.NOT_FOUND.code(),
                 "message": f"Keyword {ocr} may not existed."
-            }            
+            }     
+              
+    @staticmethod
+    def query_folder_by_ocr(payload):
+        """
+            Input: 
+                payload: dictionary
+                    - ocr: str
+                    - limit: int
+                    - files: List[str]
+                    - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+            
+            Description: Search specific folder by user query input
+        """    
+        ocr = payload['ocr']
+        limit = payload['limit']
+        user_id = payload['user_id']
+        files = payload['files']         
+        
+        for file_id in files:
+            is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
+            if is_valid == False:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"File_id({file_id}) of user({user_id}) may not existed."
+                }    
+        
+        all_keyframes = []
+        for file_id in files:                
+            payload_per_file = {
+                "ocr": ocr,
+                "limit": limit,
+                "file_id": file_id,
+                "user_id": user_id
+            }
+            result = OCRSearch.query_video(payload= payload_per_file)
+            if result['status_code'] == HTTPSTATUS.OK.code():
+                data = result['result']['data']
+                all_keyframes = [*all_keyframes, *data]
+            else:
+                print(f"\033[91m>>> Keyword {ocr} could not be found in file_id({file_id})\033[0m")
+                # print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
+        return {
+            "status_code": HTTPSTATUS.OK.code(),
+            "message": "OCR folder search successfully!",
+            "count": len(all_keyframes),
+            "result": {
+                "data": sorted(all_keyframes, key=kw_score)
+            }
+        }                 
 
 class EnsembleSearch:
     @staticmethod

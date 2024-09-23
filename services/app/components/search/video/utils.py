@@ -13,6 +13,9 @@ def get_result(kf):
 def cosine_score(kf):
     return kf['cosine_score']
 
+def kw_score(kf):
+    return kf['TF_IDF_score']
+
 def get_rank(array: List[object]):
     # Mảng đầu vào phải tăng dần
     current_rank = 1
