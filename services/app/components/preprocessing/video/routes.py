@@ -1,6 +1,6 @@
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from .services import VideoPreprocessing
-# from ..schemas import VideoItem, DocumentItem, Item
 videoPreprocessRouter = APIRouter()
 
 import os
@@ -11,13 +11,15 @@ video_dir = os.path.join(current_dir, '..', 'tmp', 'video')
 sys.path.append(video_dir)
 
 
+##############################- DEFINE REQUEST BODY -####################################
+
 from pydantic import BaseModel
 class VideoItem(BaseModel):
     user_id: str
+    file_id: str
+    file_path: str
     store: str
     format: str
-    file_path: str
-    file_id: str
     
 class TestVideoItem(BaseModel):
     user_id: str
@@ -26,18 +28,52 @@ class TestVideoItem(BaseModel):
     folder_path: str
     file_id: str
 
-# @videoPreprocessRouter.get('/{keyframeId}/')
-# def status(keyframeId: str):
-#     property = VideoPreprocessing.get_video_properties(keyframeId)
-#     print("Preprocessing result: ", property)
-#     status = "In processing"
-#     return {
-#         "status": status
-#     }
+#########################################- END -#########################################
+    
+    
+##############################- IMAGE SERVICES -##############################
+@videoPreprocessRouter.post('/image')
+def extract_image(item: VideoItem):
+    payload = {
+        "user_id": item.user_id,
+        "file_id": item.file_id, #Mongo definition
+        "file_path": item.file_path, # Actual storage
+        "store": item.store, # Local or S3 Storage
+        "format": item.format
+    }
+    try:
+        int(item.user_id)
+    except Exception as e:
+        return JSONResponse(
+            status_code= 400, 
+            content= {
+                "status_code": 400,
+                "message": f"User_id({item.user_id}) could not be converted into IntegerType."
+            }
+        )
+        
+    result = VideoPreprocessing.extract_image(payload)
+    return JSONResponse(
+        status_code= result['status_code'], # Ensure interger type
+        content= result
+    )
+
+
+####################################- END -#################################### 
+
 
 @videoPreprocessRouter.post('/video')
 def extract_keyframe(item: VideoItem):
     print("Processing video ...")
+    if item.format != "mp4":
+        return JSONResponse(
+            status_code= 400, 
+            content= {               
+                "status_code": 400,
+                "message": f"Video format must be 'mp4'."
+            }
+        )
+        
     payload = {
         "user_id": item.user_id,
         "file_id": item.file_id, #Mongo definition
@@ -45,8 +81,23 @@ def extract_keyframe(item: VideoItem):
         "store": item.store, # Local or S3 Storage
         "threshold": 0.1
     }
+    
+    try:
+        int(item.user_id)
+    except Exception as e:
+        return JSONResponse(
+            status_code= 400, 
+            content= {            
+                "status_code": 400,
+                "message": f"User_id({item.user_id}) could not be converted into IntegerType."
+            }
+        )
+            
     result = VideoPreprocessing.extract_keyframe(payload)
-    return result
+    return JSONResponse(
+        status_code= result['status_code'],
+        content= result
+    )
 
 @videoPreprocessRouter.post('/test-video')
 def test_extract_keyframe(item: TestVideoItem):
@@ -58,46 +109,14 @@ def test_extract_keyframe(item: TestVideoItem):
         "store": item.store, # Local or S3 Storage
         "threshold": 0.1
     }
-    # result = VideoPreprocessing.test_indexing(payload)
+    result = VideoPreprocessing.test_indexing(payload)
     result = {
         "message": "Update soon ..."
     }
     return result    
 
-@videoPreprocessRouter.post('/image')
-def extract_image(item: VideoItem):
-    print("Processing image ...")
-    payload = {
-        "user_id": item.user_id,
-        "file_id": item.file_id, #Mongo definition
-        "file_path": item.file_path, # Actual storage
-        "store": item.store, # Local or S3 Storage
-        "format": item.format
-    }
-    result = VideoPreprocessing.extract_image(payload)
-    return result
+########IMAGE SERVICES##########
 
 
-# @videoPreprocessRouter.post('/{type}/')
-# def extract(type: str, item: Union[VideoItem, DocumentItem]):
-#     print("Preprocessing here")
-#     result = None
-#     if type == "video":
-#         assert isinstance(item, VideoItem), "Type must be Video"
-#         print("Preprocessing ...")
-#         # video_dir = AWSS3download
-#         # video_name = VideoPreprocessing.get_path(item.id)
-#         property = VideoPreprocessing.get_video_properties(id)
-#         result = VideoPreprocessing.extract_keyframe(item.id)
-#         # result = VideoPreprocessing.extract_keyframe(video_path=f"{video_dir}/{item.id}.mp4", threshold=item.threshold, width=property['width'], height=property['height'])
-#     else:
-#         print(f"1{type}1")
-#     print(type, "12323",  item.id)
-#     return {
-#         "type": type,
-#         "id": item.id,
-#         # "shape": result['shape']
-#     }
-    
-# @videoPreprocessRouter.post('/{videoId}')
-# def xx
+
+

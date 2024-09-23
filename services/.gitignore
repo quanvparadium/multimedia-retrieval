@@ -1,4 +1,4 @@
-.env
+*.env
 *DS_Store
 .git
 __pycache__/
@@ -11,7 +11,11 @@ repo/
 tmp/
 old*/
 ._*.py
-venv/
+venv*/
 .crossnote/
 .python*
 app/data/
+data*/
+prepare*/
+.venv*/
+ocr_app*/

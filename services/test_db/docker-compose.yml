@@ -1,0 +1,46 @@
+services:
+  test_postgres_db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5435:5432
+    env_file:
+      - test_postgres_db.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - test_app_network
+
+  test_postgres_db_1:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5436:5432
+    env_file:
+      - test_postgres_db.env
+    volumes:
+      - postgres_data_1:/var/lib/postgresql/meili_data
+    networks:
+      - test_app_network
+
+  test_postgres_db_2:
+    image: pgvector/pgvector:pg16
+    ports:
+      - 5437:5432
+    env_file:
+      - test_postgres_db.env
+    volumes:
+      - postgres_data_2:/var/lib/postgresql/data
+    networks:
+      - test_app_network
+
+
+volumes:
+  postgres_data:
+  postgres_data_1:
+  postgres_data_2:
+  mongo_data:
+  meili_data:
+
+networks:
+  test_app_network:
+    driver: bridge
+    external: true

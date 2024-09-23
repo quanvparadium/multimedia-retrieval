@@ -21,6 +21,4 @@ BLIP_MODEL, BLIP_VIS_PROCESSORS, BLIP_TEXT_PROCESSORS = load_model_and_preproces
 
 print("\033[32mLoaded model successfully! \033[0m")
 
-# print("Loading OpenAI Embedding Model ...")
-# print("Loading OpenAI Embedding Model ...")
 

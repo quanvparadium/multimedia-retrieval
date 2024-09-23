@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from connections.postgres import psg_manager
-from sqlalchemy import Column, Integer, Float, String, func, TIMESTAMP
+from sqlalchemy import Column, Integer, Float, String, func, TIMESTAMP, JSON
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.hybrid import hybrid_method
     
@@ -11,8 +11,8 @@ class Keyframe(psg_manager.Base):
     __tablename__ = 'keyframes'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    fileId = Column(String, nullable=False)
-    userId = Column(String, nullable=False)
+    file_id = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
     format = Column(String, nullable=False)
     
     width = Column(Integer, nullable=False)
@@ -22,6 +22,7 @@ class Keyframe(psg_manager.Base):
     frame_second = Column(Float, nullable=True)
     
     embedding = Column(Vector(256), nullable=True)  # Allow null values
+    ocr = Column(JSON, nullable=True)
     store = Column(String, nullable=False, default='local')
     address = Column(String, nullable=False)
     createdAt = Column(TIMESTAMP, server_default=func.now(), nullable=False)

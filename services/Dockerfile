@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /code
 
@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y git && apt-get install -y libhdf5-dev
 RUN apt update \
     && apt install -y libmariadb-dev \
         gcc \
-        curl \
         linux-headers-generic \
         python3-dev \
         libcogl-pango-dev \
@@ -25,7 +24,7 @@ RUN apt update \
 
 WORKDIR /code/repo/LAVIS
 
-RUN pip install --no-binary h5py h5py
+# RUN pip install --no-binary h5py h5py
 RUN pip install -e .
 
 WORKDIR /code
@@ -40,4 +39,5 @@ RUN pip install -r postenv.txt
 WORKDIR /code/app
 
 EXPOSE 4000
+# CMD ["pytest tests/test_image.py"]
 CMD ["python", "app.py"]
