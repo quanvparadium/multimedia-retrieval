@@ -17,7 +17,6 @@ export const upload = async (req: Request, res: Response, next: NextFunction) =>
     //@ts-ignore
     const userId = req.userId;
     const { files }: { files: Files; } = req.body;
-    console.log(files, '12');
     const folderId = req.params.folderId;
     if (typeof folderId != "string") throw new AppError("FolderId is not string", 400);
     const fileSystemService = new FileSystemService();
@@ -29,11 +28,15 @@ export const upload = async (req: Request, res: Response, next: NextFunction) =>
             const fileName = generateUniqueName(blob.originalFilename ?? "", siblingNames);
             if (!blob.mimetype) continue;
             const [kind, ext] = blob.mimetype.split('/');
+            let fileType = 'document';
+            if (["video", "image"].includes(kind)) fileType = kind;
+            console.log(fileType);
             const metaData: IMetaData = {
                 size: blob.size,
                 mimetype: blob.mimetype,
                 storage: 'local',
                 location: UPLOAD_STORE_DIR,
+                fileType
             };
             let newFileSystem: any = await fileSystemService.create({ name: fileName, type: 'file', parentId: folderId, userId, metaData });
             const filePath = `${UPLOAD_STORE_DIR}/${newFileSystem.id}.${ext}`;

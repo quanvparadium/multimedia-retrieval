@@ -8,6 +8,7 @@ postgresDB.connect();
 mongoose.connect(MONGO_URI, { dbName: 'datn' });
 
 
+
 app.listen(PORT, () => {
     console.log(`Welcome to my app in port ${PORT}`);
 });

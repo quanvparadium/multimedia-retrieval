@@ -8,6 +8,7 @@ import { ModalContext } from "@/src/Providers/ModalProvider";
 import { LiaTrashAlt } from "react-icons/lia";
 import { baseURL } from "@/src/apis/axios-base";
 import DocumentFile from "./DocumentFile";
+import { logApi } from "@/src/apis/log/log.api";
 
 export default function File({ file }: IFileProps) {
   if (!file?.metaData?.mimetype) return;
@@ -93,7 +94,10 @@ export default function File({ file }: IFileProps) {
 
 
 
-  return <div className="" onContextMenu={handleRightClick}>
+  return <div className="" onContextMenu={handleRightClick} onClick={() => {
+    logApi.upload('open', { fileSystemId: file._id });
+
+  }}>
     <Component file={file} />
   </div>;
 }

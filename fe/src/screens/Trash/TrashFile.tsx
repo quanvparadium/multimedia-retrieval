@@ -6,37 +6,44 @@ import { baseURL } from "@/src/apis/axios-base";
 import { logApi } from "@/src/apis/log/log.api";
 import { FaImage } from "react-icons/fa";
 import { FaFolderClosed } from "react-icons/fa6";
-import { MdFolder, MdRestore } from "react-icons/md";
+import { MdFolder, MdPictureAsPdf, MdRestore } from "react-icons/md";
 import { MenuContext } from "@/src/Providers/MenuProvider";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
+import { iconMapper } from "@/src/components/Icon/iconMapper";
+import { LiaTrashAlt } from "react-icons/lia";
+import { ModalContext } from "@/src/Providers/ModalProvider";
+import ModalConfirm from "@/src/components/Modal/ModelConfirm";
 
 export default function TrashFile({ file }: any) {
     const { openMenu, closeMenu, emitSignal }: any = useContext(MenuContext);
+    const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
 
     let type = 'folder';
-    if (file?.metaData?.mimetype) {
-        type = file.metaData.mimetype.split('/')[0];
+    if (file?.metaData?.fileType) {
+        type = file?.metaData?.fileType;
     }
-    const iconMapper: any = {
-        video: {
-            icon: RiFolderVideoFill,
-            color: 'red'
-        },
-        image: {
-            icon: FaImage,
-            color: 'yellow'
-        },
-        folder: {
-            icon: MdFolder,
-            color: 'black'
-        },
-    };
+
     const Icon = iconMapper[type];
     const thumbNailId = file?.metaData?.thumbNailId;
     let urlThumbNail;
     if (thumbNailId) urlThumbNail = `${baseURL}/api/thumbnails/${file.metaData.thumbNailId}`;
 
     const listTasks = [
+        [,
+            {
+                name: "Delete Forever", Icon: LiaTrashAlt,
+                cb: async (event: React.MouseEvent<HTMLButtonElement>) => {
+                    closeMenu();
+                    setModalComponent(<ModalConfirm title="Delete Forever?" onClick={async () => {
+                        await fileSystemApi.deleteForever(file._id);
+                        closeModal();
+                        emitSignal();
+                    }} closeModal={closeModal} content={`"${file.name}" will be deleted forever and you won't be able to restore it`} />);
+                    openModal();
+                    // await fileSystemApi.restore(file._id);
+                    // emitSignal();
+                },
+            }],
         [{
             name: "Restore", Icon: MdRestore,
             cb: async (event: React.MouseEvent<HTMLButtonElement>) => {

@@ -9,6 +9,7 @@ export interface IMetaData {
     mimetype?: string | null;
     thumbNailId?: mongoose.Types.ObjectId;
     path?: string;
+    fileType?: string;
 }
 
 export interface IFileSystem extends Document {

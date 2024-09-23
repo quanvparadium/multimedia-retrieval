@@ -10,19 +10,34 @@ import { RiFolderVideoFill } from "react-icons/ri";
 import { MenuContext } from "@/src/Providers/MenuProvider";
 import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("@/src/components/File/PdfViewer"), { ssr: false, });
 
 export default function Keyframe({ keyframe }: any) {
     let [isOpen, setIsOpen] = useState(false);
     const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
     const { openMenu, closeMenu }: any = useContext(MenuContext);
     const router = useRouter();
+    const fileId = keyframe.fileId ?? keyframe.file_id;
+    const frameNumber = keyframe.frame_number ?? (keyframe.page + 1);
 
-    const name = `${keyframe.fileId}_${keyframe.frame_number}`;
-    const url = `${baseURL}/api/keyframes/${keyframe.frame_number}/files/${keyframe.fileId}`;
+    const name = `${fileId}_${frameNumber}`;
+    let url = `${baseURL}/api/keyframes/${frameNumber ?? keyframe.page}/files/${fileId}`;
+    if (keyframe.type == 'image') {
+        url = `${baseURL}/api/media/images/${fileId}`;
+
+    }
     const handleOnClick = () => {
         openModal();
         // setModalComponent(<ImageComponent url={url} name={name} />);
-        setModalComponent(<VideoComponent fileId={keyframe.fileId} name={name}  startSecond={keyframe.frame_second}/>);
+        if (keyframe.type == 'video')
+            setModalComponent(<VideoComponent fileId={fileId} name={name} startSecond={keyframe.frame_second} />);
+        else if (keyframe.type == 'document')
+            setModalComponent(<PdfViewer url={`${baseURL}/api/media/documents/${fileId}`} start={Number(frameNumber)} />);
+        else if (keyframe.type == 'image') {
+            setModalComponent(<ImageComponent url={url} name={name} />);
+        }
     };
 
     const ImageComponent = ({ name, url }: any) => {
@@ -75,7 +90,7 @@ export default function Keyframe({ keyframe }: any) {
 
     const handleGoto = async () => {
         try {
-            const res: any = await fileSystemApi.getParent(keyframe.fileId);
+            const res: any = await fileSystemApi.getParent(fileId);
             const parent = res.data;
             if (parent?.parentId) {
                 router.push(`/folders/${parent._id}`);

@@ -29,12 +29,24 @@ export const fileSystemApi = {
   moveToTrash: async (fileId: string) => {
     return axiosWithToken.delete(`/api/folders/${fileId}`);
   },
+  deleteForever: async (fileId: string) => {
+    return axiosWithToken.delete(`/api/folders/${fileId}/forever`);
+  },
   restore: async (fileId: string) => {
     return axiosWithToken.put(`/api/folders/${fileId}/restore`);
   },
   getDeletedFiles: async () => {
     return axiosWithToken.get(`/api/folders/recentDeleted`);
   },
+  getSize: async () => {
+    return axiosWithToken.get(`/api/folders/total-size`);
+  },
+  getTopFiles: async (params: any) => {
+    return axiosWithToken.get(`/api/folders/top-size`, { params });
+  },
+  searchFiles: async (text: string) => {
+    return axiosWithToken.get(`/api/folders/search`, { params: { text } });
+  }
   // rename: async (path: string, newName: string) => {
   //   return axiosWithToken.post(`/api/folders/rename`, { path, newName });
   // },

@@ -2,6 +2,7 @@ import express, { Express, NextFunction, Request, Response } from 'express';
 import { AppError } from "~/errors/app-error";
 import FileSystemService from "./file-system.service";
 import { FileSystemModel } from './file-system.model';
+import { removeFile } from '~/helpers/file';
 
 export const createFolder = async (req: Request, res: Response, next: NextFunction) => {
     const fileSystemService = new FileSystemService();
@@ -117,6 +118,34 @@ export const deleteFileSystem = async (req: Request, res: Response, next: NextFu
     });
 };
 
+export const deleteForeverFileSystem = async (req: Request, res: Response, next: NextFunction) => {
+    const fileSystemService = new FileSystemService();
+    //@ts-ignore
+    const userId = req.userId;
+    const id: string | number = req.params.id;
+    const file = await fileSystemService.getFileSystem(id);
+
+    if (!file) throw new AppError('Cannot find this file', 404);
+    let files: any = [file];
+    if (file.type == 'folder') {
+        const descendant = await fileSystemService.findDescendant(id, 10);
+        files = [...files, ...descendant];
+    }
+    for (const file of files) {
+        try {
+            if (file.type == 'file') {
+                await removeFile(file?.metaData?.path);
+            }
+        } catch (error: any) {
+            console.log(error.message);
+        }
+        await fileSystemService.deleteForever(file._id);
+    }
+    res.status(200).json({
+        message: "OK"
+    });
+};
+
 export const restoreFileSystem = async (req: Request, res: Response, next: NextFunction) => {
     const fileSystemService = new FileSystemService();
     //@ts-ignore
@@ -134,5 +163,61 @@ export const getDeletedFileSystem = async (req: Request, res: Response, next: Ne
     const files = await FileSystemModel.find({ userId, isDeleted: true }).sort({ deletedAt: -1 });
     res.status(200).json({
         data: files
+    });
+};
+
+export const getTotalSize = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const userId = String(req.userId);
+
+    const result = await FileSystemModel.aggregate([
+        { $match: { type: 'file', userId } },
+        {
+            $group: {
+                _id: null,
+                totalSize: { $sum: '$metaData.size' }
+            }
+        }
+    ]);
+    // Extract the total size from the result
+    const totalSize = result.length > 0 ? result[0].totalSize : 0;
+    res.status(200).json({
+        data: totalSize
+    });
+};
+
+export const getTopSizeFiles = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const userId = String(req.userId);
+    let { page = 1, limit = 10, ord = -1, fileType }: any = req.query;
+    page = Number(page);
+    limit = Number(limit);
+    ord = Number(ord);
+    const skip = (page - 1) * limit; // Calculate the number of documents to skip
+
+    const match: any = { type: 'file', userId, isDeleted: false };
+    if (fileType) match["metaData.fileType"] = fileType;
+    const topFiles = await FileSystemModel.aggregate([
+        { $match: match }, // Filter by type 'file' and specific userId
+        { $sort: { 'metaData.size': ord } }, // Sort by metaData.size in descending order
+        { $skip: skip }, // Skip documents to achieve pagination
+        { $limit: limit }, // Limit the number of documents to the specified limit
+    ]);
+
+    res.status(200).json({
+        data: topFiles
+    });
+};
+
+export const searchFiles = async (req: Request, res: Response, next: NextFunction) => {
+    //@ts-ignore
+    const userId = String(req.userId);
+    const fileSystemService = new FileSystemService();
+
+    let { text }: any = req.query;
+    console.log(text);
+    const data = await fileSystemService.query(userId, text);
+    res.status(200).json({
+        data
     });
 };

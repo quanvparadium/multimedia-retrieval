@@ -9,9 +9,9 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.entry';
 import { MdOutlineNavigateBefore, MdOutlineNavigateNext } from 'react-icons/md';
 
-export default function PdfViewer({ url }: any) {
+export default function PdfViewer({ url, start = 1 }: any) {
     const [numPages, setNumPages] = useState<number>(1);
-    const [pageNumber, setPageNumber] = useState<number>(1);
+    const [pageNumber, setPageNumber] = useState<number>(start);
     const goToNextPage = () => {
         setPageNumber(prevPageNumber => Math.min(prevPageNumber + 1, numPages || prevPageNumber));
     };

@@ -15,7 +15,6 @@ export default function ImageFile({ file }: IFileProps) {
     setIsOpen(false);
   }
   function openModal() {
-    logApi.upload('open', { fileSystemId: file._id });
     setIsOpen(true);
   }
 

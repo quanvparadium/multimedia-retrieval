@@ -23,7 +23,7 @@ export default function DropdownMenu() {
     <div>
       {/* Notification */}
       <Dropdown as="div" className="relative inline-block">
-        <Dropdown.Button className="mx-2 p-2  rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
+        {/* <Dropdown.Button className="mx-2 p-2  rounded-full hover:bg-gray-300 focus:outline-none focus:ring">
           <FaRegBell className="text-gray-500" size={21} />
         </Dropdown.Button>
 
@@ -46,7 +46,7 @@ export default function DropdownMenu() {
           <div className="flex items-center justify-center p-4 text-blue-700 underline border-t">
             <a href="#">See All</a>
           </div>
-        </Dropdown.Items>
+        </Dropdown.Items> */}
       </Dropdown>
 
       {/* Services */}

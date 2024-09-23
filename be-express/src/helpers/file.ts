@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { promises } from 'fs';
 import { resolve } from 'path';
 import { promisify } from 'util';
 
@@ -24,4 +25,17 @@ export const isExistFile = (src: string) => {
             }
         });
     });
+};
+
+
+export const removeFile = async (filePath: string) => {
+    await promises.unlink(filePath);
+    console.log('File removed successfully');
+
+};
+
+// Remove a folder
+export const removeFolder = async (folderPath: string) => {
+    await promises.rm(folderPath, { recursive: true, force: true });
+
 };

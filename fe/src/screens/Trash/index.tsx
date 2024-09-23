@@ -52,7 +52,7 @@ export default function TrashScreen() {
             </div>
             <div className="grid grid-cols-6 gap-5 mt-5 ">
                 {fileSystems.map((file) => {
-                    return <TrashFile file={file} />;
+                    return <TrashFile file={file} key={file._id} />;
                 })}
             </div>
 

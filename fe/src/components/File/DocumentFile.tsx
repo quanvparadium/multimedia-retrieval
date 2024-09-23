@@ -9,6 +9,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import dynamic from "next/dynamic";
 import { baseURL } from "@/src/apis/axios-base";
 import { RiFolderVideoFill } from "react-icons/ri";
+import { MdPictureAsPdf } from "react-icons/md";
 // @ts-ignore
 
 
@@ -33,7 +34,7 @@ export default function DocumentFile({ file }: IFileProps) {
     return (
         <div className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer">
             <div className="flex p-3 pt-0 items-center ">
-                <RiFolderVideoFill className="shrink-0" color="red" />
+                <MdPictureAsPdf className="shrink-0" color="orange" />
                 <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>
             </div>
             <div className="w-full aspect-square bg-black rounded-xl " onClick={handleClick}>

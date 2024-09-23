@@ -2,6 +2,11 @@ import { Types } from "mongoose";
 import { IFileSystemType, IFileSystemWithLayer, IMetaData } from "./file-system";
 import { FileSystemModel } from "./file-system.model";
 import { AppError } from "~/errors/app-error";
+import client from "~/connections/meiliSearch";
+
+const index = client.index('files');
+index.updateSearchableAttributes(['name']);
+index.updateFilterableAttributes(['id', 'user', 'type', 'fileType', 'createdAt', 'isDeleted']);
 
 export default class FileSystemService {
     constructor() { }
@@ -29,6 +34,15 @@ export default class FileSystemService {
             { _id: parentId },
             { $addToSet: { childrenIds: newFileSystem._id } }
         );
+        await index.addDocuments([{
+            id: newFileSystem._id,
+            name,
+            user: userId,
+            isDeleted: false,
+            createdAt: Date.now(),
+            fileType: metaData?.fileType,
+            type
+        }]);
         return newFileSystem;
     }
 
@@ -149,6 +163,10 @@ export default class FileSystemService {
         });
     }
 
+    async query(userId: string, text: string) {
+        const searchResponse = await index.search(text, { filter: `user = ${userId} AND isDeleted = false` });
+        return searchResponse.hits;
+    }
 
     async move(id: string, preParentId: string, nextParentId: string) {
 
@@ -160,6 +178,12 @@ export default class FileSystemService {
                 isDeleted: true,
                 deletedAt: Date.now()
             }
+        });
+    }
+
+    async deleteForever(id: string) {
+        return await FileSystemModel.deleteOne({
+            _id: id
         });
     }
 

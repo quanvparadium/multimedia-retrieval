@@ -6,9 +6,11 @@ import { BiFileFind } from "react-icons/bi";
 import { CgHomeAlt } from "react-icons/cg";
 import { FaRegFolderOpen } from "react-icons/fa";
 import Image from "next/image";
-import { CustomSidebarProps } from "./interface";
 import { SidebarContext } from "./SidebarContext";
 import { IoTrashOutline } from "react-icons/io5";
+import { TiCloudStorageOutline } from "react-icons/ti";
+import ProgressBar from "../ProgressBar";
+import { fileSystemApi } from "@/src/apis/file-system/file-system.api";
 
 export default function CustomSidebar() {
   const { isSidebarOpen, setSidebarOpen }: any = useContext(SidebarContext);
@@ -39,12 +41,27 @@ export default function CustomSidebar() {
       name: "Thùng rác",
       Icon: IoTrashOutline,
     },
+    {
+      path: "/storage",
+      name: "Lưu trữ",
+      Icon: TiCloudStorageOutline,
+    },
   ];
   const [pageIndex, setPageIndex] = useState(0);
   useEffect(() => {
     const pathIndex = pages.findIndex((page) => page.path == router.pathname);
     setPageIndex(pathIndex);
   }, [router.pathname]);
+
+  const [size, setSize] = useState(0);
+  useEffect(() => {
+    const getSize = async () => {
+      const res = await fileSystemApi.getSize();
+      setSize(Number((res.data / (1024 * 1024 * 1024))));
+    };
+    getSize();
+  }, []);
+
   return (
     <aside
       className={classNames(
@@ -99,7 +116,7 @@ export default function CustomSidebar() {
               href={page.path}
               key={index}
               className={classNames(
-                "flex items-center py-2.5 my-1 px-4 space-x-2 hover:bg-blue-100",
+                "flex items-center py-2 my-1 px-4 space-x-2 hover:bg-blue-100",
                 {
                   "bg-blue-200": index == pageIndex,
                   "hover:bg-blue-100": index !== pageIndex,
@@ -110,13 +127,18 @@ export default function CustomSidebar() {
                 },
               )}
             >
-              <page.Icon size={24} />
+              <page.Icon size={20} />
               <div className={classNames("ml-2", { "lg:hidden": !isSidebarOpen })}>{page.name}</div>
               {/* {page.name} */}
             </Link>
           );
         })}
       </span>
+
+      {isSidebarOpen && <div className="py-2.5 my-1 px-4">
+        <ProgressBar progress={size} max={2} />
+        <p className="mt-1 text-gray-600">{size.toPrecision(1)} GB of 2GB used</p>
+      </div>}
     </aside>
   );
 }

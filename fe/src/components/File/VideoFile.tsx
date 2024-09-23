@@ -12,7 +12,6 @@ export default function VideoFile({ file }: IFileProps) {
     setIsOpen(false);
   }
   function openModal() {
-    logApi.upload('open', { fileSystemId: file._id });
     setIsOpen(true);
   }
   const url = `${baseURL}/api/media/videos/${file._id}`;

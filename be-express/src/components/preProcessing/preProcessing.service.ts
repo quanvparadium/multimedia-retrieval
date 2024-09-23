@@ -40,6 +40,16 @@ export default class PreProcessingService {
                 "metaData.thumbNailId": thumbNailId
             },
         },);
+
+        axios.post("http://localhost:4000/api/preprocessing/image", {
+            "user_id": String(userId),
+            "file_id": id,
+            format: ext,
+            store: storage,
+            "file_path": path
+        }).catch((err) => {
+            console.log(err.response.data.detail);
+        });
     }
 
     async handleVideo(newFileSystem: any) {
@@ -54,15 +64,15 @@ export default class PreProcessingService {
             },
         },);
 
-        axios.post("http://localhost:4000/api/preprocessing/video", {
-            "user_id": String(userId),
-            "file_id": id,
-            format: ext,
-            store: storage,
-            "file_path": path
-        }).catch((err) => {
-            console.log(err.response.data.detail);
-        });
+        // axios.post("http://localhost:4000/api/preprocessing/video", {
+        //     "user_id": String(userId),
+        //     "file_id": id,
+        //     format: ext,
+        //     store: storage,
+        //     "file_path": path
+        // }).catch((err) => {
+        //     console.log(err.response.data.detail);
+        // });
     }
 
     async handleDocument(newFileSystem: any) {
@@ -72,17 +82,17 @@ export default class PreProcessingService {
         const keyFrameDir = `${STORE_DIR}/keyframes/${id}`;
         await fs.mkdir(keyFrameDir, { recursive: true });
         const { pdf } = await import("pdf-to-img");
-        const document = await pdf(path, { scale: 3 });
+        const document = await pdf(path, { scale: 1 });
         let counter = 1;
-        axios.post("http://localhost:5000/api/document", {
-            "user_id": String(userId),
-            "file_id": id,
-            format: ext,
-            store: storage,
-            "file_path": path
-        }).catch((err) => {
-            console.log(err.response.data.detail);
-        });
+        // axios.post("http://localhost:5000/api/document", {
+        //     "user_id": String(userId),
+        //     "file_id": id,
+        //     format: ext,
+        //     store: storage,
+        //     "file_path": path
+        // }).catch((err) => {
+        //     console.log(err.response.data.detail);
+        // });
         for await (const image of document) {
             await fs.writeFile(`${keyFrameDir}/${id}_${counter}.jpg`, image);
             counter++;

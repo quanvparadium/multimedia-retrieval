@@ -1,0 +1,6 @@
+// Quân 
+- Thêm index user cho images,videos
+- Trong documents điều gì xảy ra nếu cả 10000 files (có nhanh hơn được không)
+
+// Nguyên
+
