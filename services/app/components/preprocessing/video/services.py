@@ -148,11 +148,8 @@ class VideoPreprocessing:
                 - format: str
             
             Output:
-            {
-                "status_code": 200/202/404/400/..
-                "message": "...",
-                
-            }
+                - status_code: 201/400/422.
+                - message": "..."
         """
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
@@ -214,13 +211,16 @@ class VideoPreprocessing:
     @staticmethod
     def extract_keyframe(payload):
         """
-            Description:
-            Input:
-                payload: dictionary
-                    - file_id
-                    - file_path
-                    - user_id
-                    - 
+            payload: dictionary
+                - user_id: str (Must be convert into integer)
+                - file_id: str
+                - file_path: str
+                - store: str
+                - format: str
+            
+            Output:
+                - status_code: 201/400/422.
+                - message": "..."
         """
         # Step 1: Check file if exists in database
         file_id = payload['file_id']
@@ -286,7 +286,7 @@ class VideoPreprocessing:
         ffmpeg_commands = [f"ffmpeg -y -i {video_path} -fps_mode:v passthrough -loglevel quiet -vf \"select='eq(n\\,{kf_frame_number})'\" -vsync vfr -frames:v 1 {kf_output_path}" for kf_frame_number, kf_output_path in zip(keyframe_indices, kf_output_paths)]
         # print(ffmpeg_commands)
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = [executor.submit(os.system, command) for command in ffmpeg_commands]
             results = [future.result() for future in futures]
         # print(results)
@@ -325,7 +325,7 @@ class VideoPreprocessing:
             if kf_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
                 return {
                     "status_code": HTTPSTATUS.BAD_REQUEST.code(),
-                    "message": f"Keyframe {kf_frame_number} cannot be created. Please check again request body!"
+                    "message": f"Keyframe number {kf_frame_number} cannot be created. Please check again request body!"
                 }
             print(f"Extracted keyframe {kf_frame_number} to {kf_output_path}")
             
