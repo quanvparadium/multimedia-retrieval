@@ -64,10 +64,11 @@ class VideoSearch:
     def query_video(payload):
         """
             payload: dictionary
-                - query: str
+                - query/image_path: str
                 - limit: int
                 - file_id: str
                 - user_id: str (Must be convert into integer)
+                - type: str (Must be ["image", 'text'])
             
             Output:
                 - status_code: 200/400/404
@@ -75,19 +76,29 @@ class VideoSearch:
                 - result: dictionary
                     - "data": List[dict]
         """         
-        query = payload['query']
         limit = payload['limit']
         file_id = payload['file_id']
         user_id = payload['user_id']
+        input_type = payload['type']
+        assert (input_type == 'text' or input_type == 'image'), "Input type must be text or image."
         
-        txt = BLIP_TEXT_PROCESSORS["eval"](query)
-        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
-        text_features = np.array(text_features).astype(float).flatten().tolist()
+        if input_type == "text":
+            query = payload['query']
+            txt = BLIP_TEXT_PROCESSORS["eval"](query)
+            text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
+            text_features = np.array(text_features).astype(float).flatten().tolist()
+            query_vector_str = f"[{','.join(map(str, text_features))}]"
+        else:
+            raw_image = Image.open(payload['image_path']).convert('RGB')            
+            img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+            img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
+            img_features = np.array(img_features).astype(float).flatten().tolist()
+            query_vector_str = f"[{','.join(map(str, img_features))}]"            
+            
         
         hashed_session = psg_manager.hash_session(user_id= user_id)
         db = psg_manager.get_session(hased_session= hashed_session)  
         try:
-            query_vector_str = f"[{','.join(map(str, text_features))}]"
             sql_query = text(f"""
                 SELECT *, (embedding <=> :query_vector) AS distance
                 FROM keyframes
@@ -106,7 +117,7 @@ class VideoSearch:
             #     print(kf)
             #     print("Distance: ", kf.distance)
             if len(kf_res) > 0:
-                print("Return: ", [kf.address for kf in kf_res])
+                print("Semantic return: ", [kf.address for kf in kf_res])
                 score_kf = [kf.distance for kf in kf_res]
                 ranker = get_rank(score_kf)
                 return {
@@ -120,7 +131,8 @@ class VideoSearch:
                             "keyframe_id": kf.id,
                             "cosine_score": kf.distance,
                             "frame_number": kf.frame_number,
-                            "frame_second": kf.frame_second,                           
+                            "frame_second": kf.frame_second,
+                            "type": "video" if kf.byte_offset else "image",                         
                             "Rank_score": ranker[idx]
                         } for idx, kf in enumerate(kf_res)]
                     }
@@ -131,7 +143,6 @@ class VideoSearch:
                     "message": f"File_id({file_id}) may not existed."
                 }
         except Exception as e:
-            db.rollback()
             return {
                 "status_code": HTTPSTATUS.BAD_REQUEST.code(),
                 "error": str(e)
@@ -176,12 +187,13 @@ class VideoSearch:
                 "query": query,
                 "limit": limit,
                 "file_id": file_id,
-                "user_id": user_id
+                "user_id": user_id,
+                "type": 'text'
             }
             result = VideoSearch.query_video(payload= payload_per_file)
             if result['status_code'] == HTTPSTATUS.OK.code():
                 data = result['result']['data']
-                current_kf = [kf for kf in data if kf['cosine_score'] <= 1.19]
+                current_kf = [kf for kf in data if kf['cosine_score'] <= 0.75]
                 all_keyframes = [*all_keyframes, *current_kf]
             else:
                 print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
@@ -194,10 +206,202 @@ class VideoSearch:
             }
         }
 
-                
+    def query_user_by_text(payload):
+        """
+            payload: dictionary
+                - query: str
+                - limit: int
+                - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+        """         
+        query = payload['query']
+        limit = payload['limit']
+        user_id = payload['user_id']        
+       
+        txt = BLIP_TEXT_PROCESSORS["eval"](query)
+        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
+        text_features = np.array(text_features).astype(float).flatten().tolist()
         
+        hashed_session = psg_manager.hash_session(user_id= user_id)
+        db = psg_manager.get_session(hased_session= hashed_session)         
+       
+        try: 
+            query_vector_str = f"[{','.join(map(str, text_features))}]"
+            sql_query = text(f"""
+                SELECT *, (embedding <=> :query_vector) AS distance
+                FROM keyframes
+                WHERE "user_id" = :user_id
+                ORDER BY distance 
+                LIMIT :limit;
+            """)
+            kf_res = db.execute(sql_query, {
+                'user_id': user_id, 
+                'query_vector': query_vector_str, 
+                'limit': limit
+            }).fetchall()           
+            
+            if len(kf_res) > 0:
+                print("User semantic result: ", [kf.address for kf in kf_res])
+                score_kf = [kf.distance for kf in kf_res]
+                ranker = get_rank(score_kf)
+                return {
+                    "status_code": HTTPSTATUS.OK.code(),
+                    "message": "Semantic search (user) successfully!",
+                    "result": {
+                        "data": [{
+                            "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
+                            "file_id": kf.file_id,
+                            "byte_offset": kf.byte_offset,
+                            "keyframe_id": kf.id,
+                            "cosine_score": kf.distance,
+                            "frame_number": kf.frame_number,
+                            "frame_second": kf.frame_second,  
+                            "type": "video" if kf.byte_offset else "image",                         
+                            "Rank_score": ranker[idx]
+                        } for idx, kf in enumerate(kf_res)]
+                    }
+                }
+            else:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"Query {query} related to user_id({user_id}) could not be found in cluster database."
+                }      
+        except Exception as e:
+            return {
+                "status_code": HTTPSTATUS.FORBIDDEN,
+                "error": str(e)
+            } 
+        
+    def query_folder_by_image(payload):
+        """
+            Input: 
+                payload: dictionary
+                    - image_path: str
+                    - limit: int
+                    - files: List[str]
+                    - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+            
+            Description: Search specific folder by user uploaded image
+        """         
+        image_path = payload['image_path']
+        limit = payload['limit']
+        user_id = payload['user_id']
+        files = payload['files']    
+        
+        for file_id in files:
+            is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
+            if is_valid == False:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"File_id({file_id}) of user({user_id}) may not existed."
+                }          
    
-   
+        all_keyframes = []
+        for file_id in files:                
+            payload_per_file = {
+                "image_path": image_path,
+                "limit": limit,
+                "file_id": file_id,
+                "user_id": user_id,
+                "type": 'image'
+            }
+            result = VideoSearch.query_video(payload= payload_per_file)
+            if result['status_code'] == HTTPSTATUS.OK.code():
+                data = result['result']['data']
+                all_keyframes = [*all_keyframes, *data]
+            else:
+                print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
+        return {
+            "status_code": HTTPSTATUS.OK.code(),
+            "message": "Semantic folder search successfully!",
+            "count": len(all_keyframes),
+            "result": {
+                "data": sorted(all_keyframes, key=cosine_score)
+            }
+        }   
+    
+    def query_user_by_image(payload):
+        """
+            payload: dictionary
+                - image_path: str
+                - limit: int
+                - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+        """         
+        image_path = payload['image_path']
+        limit = payload['limit']
+        user_id = payload['user_id']        
+       
+        raw_image = Image.open(image_path).convert('RGB')
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
+        img_features = np.array(img_features).astype(float).flatten().tolist()
+        query_vector_str = f"[{','.join(map(str, img_features))}]"
+        
+        hashed_session = psg_manager.hash_session(user_id= user_id)
+        db = psg_manager.get_session(hased_session= hashed_session)         
+       
+        try: 
+            sql_query = text(f"""
+                SELECT *, (embedding <=> :query_vector) AS distance
+                FROM keyframes
+                WHERE "user_id" = :user_id
+                ORDER BY distance 
+                LIMIT :limit;
+            """)
+            kf_res = db.execute(sql_query, {
+                'user_id': user_id, 
+                'query_vector': query_vector_str, 
+                'limit': limit
+            }).fetchall()           
+            
+            if len(kf_res) > 0:
+                print("User semantic result: ", [kf.address for kf in kf_res])
+                score_kf = [kf.distance for kf in kf_res]
+                ranker = get_rank(score_kf)
+                return {
+                    "status_code": HTTPSTATUS.OK.code(),
+                    "message": "Semantic search (user) successfully!",
+                    "result": {
+                        "data": [{
+                            "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
+                            "file_id": kf.file_id,
+                            "byte_offset": kf.byte_offset,
+                            "keyframe_id": kf.id,
+                            "cosine_score": kf.distance,
+                            "frame_number": kf.frame_number,
+                            "frame_second": kf.frame_second,  
+                            "type": "video" if kf.byte_offset else "image",                                                  
+                            "Rank_score": ranker[idx]
+                        } for idx, kf in enumerate(kf_res)]
+                    }
+                }
+            else:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"Image path {image_path} related to user_id({user_id}) could not be found in cluster database."
+                }      
+        except Exception as e:
+            return {
+                "status_code": HTTPSTATUS.FORBIDDEN,
+                "error": str(e)
+            }         
    
 class OldVideoSearch: 
     @staticmethod
@@ -421,7 +625,23 @@ class OldVideoSearch:
             
 class OCRSearch:
     @staticmethod
-    def query_video(payload):          
+    def query_video(payload): 
+        """
+            Input: 
+                payload: dictionary
+                    - ocr: str
+                    - limit: int
+                    - file_id: str
+                    - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+            
+            Description: Search specific file by user query input
+        """                    
         ocr = payload['ocr']
         limit = payload['limit']
         file_id = payload['file_id']  
@@ -429,48 +649,56 @@ class OCRSearch:
         
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)    
-      
-        sql_query = text(f"""
-            SELECT *, ts_rank(to_tsvector('simple', ocr), to_tsquery('simple', :search_term || ':*')) AS kw_score
-            FROM keyframes
-            WHERE "user_id" = :user_id
-            AND "file_id" = :file_id
-            AND to_tsvector('simple', ocr) @@ to_tsquery('simple', :search_term || ':*')
-            ORDER BY kw_score DESC
-            LIMIT :limit;
-        """)
-        
-        kf_ocr_res = db.execute(sql_query, {
-            'user_id': user_id,
-            'file_id': file_id,
-            'search_term': ocr,
-            'limit': limit
-        }).fetchall()
-        
-        if len(kf_ocr_res) > 0:
-            score_kf = [kf.kw_score for kf in kf_ocr_res]
-            ranker = get_rank(score_kf)
-            return {
-                "status_code": HTTPSTATUS.OK.code(),
-                "message": "OCR full-text search successfully!",
-                "result": {
-                    "data": [{
-                        "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
-                        "file_id": kf.file_id,
-                        "byte_offset": kf.byte_offset,
-                        "keyframe_id": kf.id,
-                        "TF_IDF_score": kf.kw_score,
-                        "frame_number": kf.frame_number,
-                        "frame_second": kf.frame_second,                         
-                        "Rank_score": ranker[idx]
-                    } for idx, kf in enumerate(kf_ocr_res)]
+        try:
+            sql_query = text(f"""
+                SELECT *, ts_rank(to_tsvector('simple', ocr), plainto_tsquery('simple', :search_term || ':*')) AS kw_score
+                FROM keyframes
+                WHERE "user_id" = :user_id
+                AND "file_id" = :file_id
+                AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
+                ORDER BY kw_score DESC
+                LIMIT :limit;
+            """)
+            
+            kf_ocr_res = db.execute(sql_query, {
+                'user_id': user_id,
+                'file_id': file_id,
+                'search_term': ocr,
+                'limit': limit
+            }).fetchall()
+            
+            if len(kf_ocr_res) > 0:
+                print(f"OCR result - file_id({file_id}): {kf_ocr_res}")
+                score_kf = [-kf.kw_score for kf in kf_ocr_res]
+                ranker = get_rank(score_kf)
+                return {
+                    "status_code": HTTPSTATUS.OK.code(),
+                    "message": "OCR full-text search successfully!",
+                    "result": {
+                        "data": [{
+                            "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
+                            "file_id": kf.file_id,
+                            "byte_offset": kf.byte_offset,
+                            "keyframe_id": kf.id,
+                            "TF_IDF_score": kf.kw_score,
+                            "frame_number": kf.frame_number,
+                            "frame_second": kf.frame_second,     
+                            "type": "video" if kf.byte_offset else "image",                                            
+                            "Rank_score": ranker[idx]
+                        } for idx, kf in enumerate(kf_ocr_res)]
+                    }
                 }
-            }
-        else:
+            else:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"Keyword '{ocr}' may not existed."
+                }    
+        except Exception as e:
             return {
                 "status_code": HTTPSTATUS.NOT_FOUND.code(),
-                "message": f"Keyword {ocr} may not existed."
-            }     
+                "message": f"OCR search could not be accepted.",
+                "error": str(e)
+            } 
               
     @staticmethod
     def query_folder_by_ocr(payload):
@@ -516,7 +744,7 @@ class OCRSearch:
                 data = result['result']['data']
                 all_keyframes = [*all_keyframes, *data]
             else:
-                print(f"\033[91m>>> Keyword {ocr} could not be found in file_id({file_id})\033[0m")
+                print(f"\033[91m>>> Keyword '{ocr}' could not be found in file_id({file_id})\033[0m")
                 # print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
         return {
             "status_code": HTTPSTATUS.OK.code(),
@@ -525,7 +753,80 @@ class OCRSearch:
             "result": {
                 "data": sorted(all_keyframes, key=kw_score)
             }
-        }                 
+        }               
+
+    @staticmethod
+    def query_user_by_ocr(payload):
+        """
+            Input: 
+                payload: dictionary
+                    - ocr: str
+                    - limit: int
+                    - user_id: str (Must be convert into integer)
+            
+            Output:
+                - status_code: 200/400/404
+                - message": "..."
+                - result: dictionary
+                    - "data": List[dict]
+            
+            Description: Search all (user_id) by user query input
+        """          
+        ocr = payload['ocr']
+        limit = payload['limit']
+        user_id = payload['user_id']
+        
+        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
+        db = psg_manager.get_session(hased_session= hashed_session)    
+        try:
+            sql_query = text(f"""
+                SELECT *, ts_rank(to_tsvector('simple', ocr), plainto_tsquery('simple', :search_term || ':*')) AS kw_score
+                FROM keyframes
+                WHERE "user_id" = :user_id
+                AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
+                ORDER BY kw_score DESC
+                LIMIT :limit;
+            """)
+            
+            kf_ocr_res = db.execute(sql_query, {
+                'user_id': user_id,
+                'search_term': ocr,
+                'limit': limit
+            }).fetchall()
+            
+            if len(kf_ocr_res) > 0:
+                print(f"OCR result - user_id({user_id}): {kf_ocr_res}")
+                
+                score_kf = [-kf.kw_score for kf in kf_ocr_res]
+                ranker = get_rank(score_kf)
+                return {
+                    "status_code": HTTPSTATUS.OK.code(),
+                    "message": "OCR full-text search successfully!",
+                    "result": {
+                        "data": [{
+                            "ID": f"{kf.user_id}-{kf.file_id}-{kf.frame_number}",
+                            "file_id": kf.file_id,
+                            "byte_offset": kf.byte_offset,
+                            "keyframe_id": kf.id,
+                            "TF_IDF_score": kf.kw_score,
+                            "frame_number": kf.frame_number,
+                            "frame_second": kf.frame_second,  
+                            "type": "video" if kf.byte_offset else "image",
+                            "Rank_score": ranker[idx]
+                        } for idx, kf in enumerate(kf_ocr_res)]
+                    }
+                }
+            else:
+                return {
+                    "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                    "message": f"Keyword '{ocr}' may not existed."
+                }    
+        except Exception as e:
+            return {
+                "status_code": HTTPSTATUS.NOT_FOUND.code(),
+                "message": f"OCR search could not be accepted.",
+                "error": str(e)
+            }         
 
 class EnsembleSearch:
     @staticmethod
@@ -561,7 +862,7 @@ class EnsembleSearch:
         
             
     @staticmethod
-    def hybrid_search(ranker_one: List[object], ranker_two: List[object], weight: float = 0.3):
+    def hybrid_search(ranker_one: List[object], ranker_two: List[object], output_top_k: int, weight: float = 0.3):
         if (weight < 0) or (weight > 1):
             return {
                 "message": "failed"
@@ -593,7 +894,7 @@ class EnsembleSearch:
         data = sorted(ensemble_ranker, key=get_ensemble_score, reverse= True)
         return {
             "message": "success",
-            "data": data
+            "data": data if len(data) < output_top_k else data[:output_top_k]
         }
                 
         

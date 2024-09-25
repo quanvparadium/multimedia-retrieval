@@ -17,15 +17,23 @@ class PostgresManager:
         self.host = f"test_{self.host}" if test else self.host
         # self.port = os.getenv('POSTGRES_PORT', '5432')
         self.ports = ['5432', '5432', '5432']
+        if self.host in ['localhost', '127.0.0.1']:
+            self.ports = ['5432', '5433', '5434']
+            
         # returned_host = self.host + f'_{i}'
-        def returned_host(idx):
+        def returned_host(idx, host):
+            if host in ['localhost', '127.0.0.1']:
+                return self.host
+            
             if idx % 3 == 0:
                 print(self.host)
                 return self.host
             else:
                 print(self.host + f'_{idx % 3}')
                 return self.host + f'_{idx % 3}'
-        self.db_urls = [f"postgresql://{self.user}:%s@{returned_host(idx)}:{port}/{self.database}" % quote_plus(self.password) for idx, port in enumerate(self.ports)]
+        self.db_urls = [f"postgresql://{self.user}:%s@{returned_host(idx, self.host)}:{port}/{self.database}" % quote_plus(self.password) for idx, port in enumerate(self.ports)]
+        for url in self.db_urls:
+            print("DB link: ", url)
         self.engines = [create_engine(db_url) for db_url in self.db_urls]
         self.Session = [scoped_session(sessionmaker(bind=engine)) for engine in self.engines]
         self.Base = declarative_base()
