@@ -433,66 +433,11 @@ class VideoPreprocessing:
             }
         except ffmpeg.Error as e:
             print(f"Error retrieving video properties: {e}")
-            return None
-
-    @staticmethod
-    def test_indexing(payload):
-        folder_path = payload['folder_path']
-        V_WIDTH = 0
-        V_HEIGHT = 0
-        subdir_folder = sorted(os.listdir(folder_path))
-        for idx, file_name in tqdm(enumerate(subdir_folder)):
-            print("="*25)
-            print(f"Adding {file_name} ...")
-            frame_number = int(file_name.split('.')[0])
-            keyframe_path = os.path.join(folder_path, file_name)
-            raw_image = Image.open(keyframe_path)
-            if idx == 0: 
-                V_WIDTH, V_HEIGHT = raw_image.width, raw_image.height
-            time_at_frame = float(frame_number / V_WIDTH)
-            target_byte_offset = frame_number * V_WIDTH * V_HEIGHT
-                
-            img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-            image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-            image_features = np.array(image_features).astype(float).flatten().tolist()            
-            property = {
-                'file_id': payload['file_id'],
-                'user_id': payload['user_id'],
-                'format': 'jpg',
-                "width": int(V_WIDTH),
-                "height": int(V_HEIGHT),
-                "embedding": image_features,
-                "frame_number": frame_number,
-                "frame_second": time_at_frame,
-                "byte_offset": target_byte_offset,
-                "store": payload['store'],
-                "address": keyframe_path
-            }        
-            kf_result = VideoPreprocessing.create_keyframe(property)
-            if kf_result is None:
-                # raise Exception(f"Keyframe {index} cannot be created")
-                return {
-                    "message": f"Keyframe {frame_number} cannot be created"
-                }
-            else:
-                if isinstance(kf_result, dict):
-                    return kf_result if "message" in kf_result else "Fail code"
-            print(f"Extracted keyframe {frame_number} to {keyframe_path}")
-        VideoPreprocessing._create_index(videoId=payload["file_id"], count=len(subdir_folder))
-        VideoPreprocessing._upsert_user_index(userId=payload["user_id"], count=len(subdir_folder))
-
-        print("Keyframes extracted and saved successfully.")
-        return {
-            "message": "Keyframes extracted and saved successfully."
-        }            
+            return None           
 
     @staticmethod
     def _create_index(videoId, count):
-        # create_index_query = text(f"""
-        #     CREATE INDEX IF NOT EXISTS flat_idx 
-        #     ON keyframes ((embedding::vector(256)) vector_cosine_ops) 
-        #     WHERE (keyframes.\"file_id\" = :video_id);
-        # """)
+
         can_be_index = False
         # if (count > 10000) and (count < 100000):
         if (count < 100000):
@@ -521,10 +466,6 @@ class VideoPreprocessing:
             print("Db result create index: ", db_res)
         else:
             print("The number of keyframe is too small to create index")
-
-    @staticmethod
-    def get_status(id):
-        pass
     
     @staticmethod
     def _upsert_user_index(userId, count=-1):
@@ -543,11 +484,3 @@ class VideoPreprocessing:
         print("Result create user index: ", db_res)
         print(f"\033[32m>>> Index embedding by user_id({userId}) is created.\033[0m")
         
-        
-        
-            # can_be_index = True
-            # Câu lệnh SQL kiểm tra sự tồn tại của index
-        
-
-            
-

@@ -22,6 +22,7 @@ class VideoSearchBody(BaseModel):
     limit: int
     file_id: str
     user_id: str
+    database_type: str
     ocr: str
     prior: str = "semantic"
     
@@ -33,6 +34,7 @@ class FolderQuerySearchBody(BaseModel):
     limit: int
     files: List[str]
     user_id: str
+    database_type: str
     ocr: str
     prior: str = "semantic"
     
@@ -42,6 +44,7 @@ class AllQuerySearchBody(BaseModel):
     query: str
     limit: int
     user_id: str
+    database_type: str
     ocr: str
     prior: str = "semantic"
     
@@ -50,12 +53,14 @@ class FolderImageSearchBody(BaseModel):
     image_path: str
     limit: int
     files: List[str]
+    database_type: str
     user_id: str
   
 class AllImageSearchBody(BaseModel):
     image_path: str
     limit: int
     user_id: str
+    database_type: str
     
 def WrapperResponse(status_code: int, message: str, data: List[object] = None):
     if data:
@@ -81,6 +86,10 @@ def WrapperResponse(status_code: int, message: str, data: List[object] = None):
 
 @searchRouter.post('/keyframe')
 def video_search(req: VideoSearchBody):
+    return WrapperResponse(
+        status_code=HTTPSTATUS.TEMPORARY_REDIRECT.code(),
+        message="Please contact admin in order to get new API!"
+    )
     if DatabaseServices.is_valid_user(user_id= req.user_id) == False:
         return WrapperResponse(
             status_code= HTTPSTATUS.BAD_REQUEST.code(),
@@ -109,6 +118,7 @@ def video_search(req: VideoSearchBody):
         "limit": req.limit,
         "file_id": req.file_id,
         "user_id": req.user_id,
+        "database_type": req.database_type,
         "type": "text"
     }
     
@@ -116,7 +126,8 @@ def video_search(req: VideoSearchBody):
         "ocr": req.ocr,
         "limit": req.limit,
         "file_id": req.file_id,
-        "user_id": req.user_id        
+        "user_id": req.user_id,
+        "database_type": req.database_type       
     }
     
     
@@ -245,14 +256,16 @@ def folder_search(req: FolderQuerySearchBody):
         "query": req.query,
         "limit": req.limit,
         "files": req.files,
-        "user_id": req.user_id
+        "user_id": req.user_id,
+        "database_type": req.database_type
     }
     
     ocr_payload = {
         "ocr": req.ocr,
         "limit": req.limit,
         "files": req.files,
-        "user_id": req.user_id
+        "user_id": req.user_id,
+        "database_type": req.database_type
     }
     if req.query.strip() == "" and req.ocr.strip() == "":
         return WrapperResponse(
@@ -314,12 +327,14 @@ def all_search_by_text(req: AllQuerySearchBody):
     payload = {
         "query": req.query,
         "limit": req.limit,
-        "user_id": req.user_id
+        "user_id": req.user_id,
+        "database_type": req.database_type
     }
     ocr_payload = {
         "ocr": req.ocr,
         "limit": req.limit,
-        "user_id": req.user_id
+        "user_id": req.user_id,
+        "database_type": req.database_type
     }
 
     
@@ -354,7 +369,8 @@ def all_search_by_text(req: AllQuerySearchBody):
                     "data": remove_ensemble_ranker(combine_ranker['data'])
                 }
             }    
-        elif ocr_result["status_code"] != HTTPSTATUS.OK.code():
+        elif ocr_result["status_code"] != HTTPSTATUS.OK.code() \
+            and vector_result['status_code'] == HTTPSTATUS.OK.code():
             # Tức là ocr trả về lỗi khác 200 => is_ocr_search = True
             result = vector_result
             return WrapperResponse(
@@ -362,7 +378,8 @@ def all_search_by_text(req: AllQuerySearchBody):
                 message= f"Hybrid user search successfully! Keyword {req.ocr} could be not found!",
                 data= result['result']['data']
             )
-        elif vector_result['status_code'] != HTTPSTATUS.OK.code():
+        elif vector_result['status_code'] != HTTPSTATUS.OK.code() \
+            and ocr_result["status_code"] == HTTPSTATUS.OK.code():
             # Có thể đầu vào ocr không tồn tại, trả về vector result
             # return ocr_result
             result = ocr_result          
@@ -394,6 +411,7 @@ def folder_search(req: FolderImageSearchBody):
         "limit": req.limit,
         "files": req.files,
         "user_id": req.user_id,
+        "database_type": req.database_type
     }
     result = VideoSearch.query_folder_by_image(payload)
     return JSONResponse(
@@ -403,10 +421,22 @@ def folder_search(req: FolderImageSearchBody):
 
 @searchRouter.post('/all/keyframe/image')
 def all_search_by_image(req: AllImageSearchBody):
+    if DatabaseServices.is_valid_user(user_id= req.user_id) == False:
+        return WrapperResponse(
+            status_code= HTTPSTATUS.BAD_REQUEST.code(),
+            message= f"User_id({req.user_id}) could not be converted into IntegerType."
+        )
+    
+    if DatabaseServices.is_user_exist(user_id= req.user_id) == False:
+        return WrapperResponse(
+            status_code= HTTPSTATUS.NOT_FOUND.code(),
+            message= f"User_id({req.user_id}) is not existed in cluster database."
+        )     
     payload = {
         "image_path": req.image_path,
         "limit": req.limit,
-        "user_id": req.user_id
+        "user_id": req.user_id,
+        "database_type": req.database_type
     }
     result = VideoSearch.query_user_by_image(payload)
     return JSONResponse(

@@ -2,7 +2,7 @@ import os
 import sys
 import torch
 import numpy as np
-import datetime
+from datetime import datetime
 from typing import List
 from .utils import get_rank, get_result, cosine_score, kw_score
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -64,11 +64,12 @@ class VideoSearch:
     def query_video(payload):
         """
             payload: dictionary
-                - query/image_path: str
+                - embedding: str
                 - limit: int
                 - file_id: str
                 - user_id: str (Must be convert into integer)
                 - type: str (Must be ["image", 'text'])
+                - database_type: str (Must be ["image", 'video'])
             
             Output:
                 - status_code: 200/400/404
@@ -79,30 +80,25 @@ class VideoSearch:
         limit = payload['limit']
         file_id = payload['file_id']
         user_id = payload['user_id']
-        input_type = payload['type']
-        assert (input_type == 'text' or input_type == 'image'), "Input type must be text or image."
-        
-        if input_type == "text":
-            query = payload['query']
-            txt = BLIP_TEXT_PROCESSORS["eval"](query)
-            text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
-            text_features = np.array(text_features).astype(float).flatten().tolist()
-            query_vector_str = f"[{','.join(map(str, text_features))}]"
-        else:
-            raw_image = Image.open(payload['image_path']).convert('RGB')            
-            img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-            img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
-            img_features = np.array(img_features).astype(float).flatten().tolist()
-            query_vector_str = f"[{','.join(map(str, img_features))}]"            
-            
+        database_type = payload['database_type']
+        query_vector_str = f"[{','.join(map(str, payload['embedding']))}]"             
         
         hashed_session = psg_manager.hash_session(user_id= user_id)
         db = psg_manager.get_session(hased_session= hashed_session)  
         try:
+            is_null = 'NULL' if database_type == 'image' \
+                else "NOT NULL" if database_type == 'video' \
+                else "FAIL"
+            if is_null == "FAIL":
+                return {
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": "'database_type should be 'image' or 'video'."
+                }             
             sql_query = text(f"""
                 SELECT *, (embedding <=> :query_vector) AS distance
                 FROM keyframes
                 WHERE "file_id" = :video_id
+                AND "byte_offset" IS {is_null}
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -112,10 +108,6 @@ class VideoSearch:
                 'limit': limit
             }).fetchall()
             
-            # for kf in kf_res:
-            #     print("Index ", kf.id, "- Address: ", kf.address )
-            #     print(kf)
-            #     print("Distance: ", kf.distance)
             if len(kf_res) > 0:
                 print("Semantic return: ", [kf.address for kf in kf_res])
                 score_kf = [kf.distance for kf in kf_res]
@@ -140,7 +132,7 @@ class VideoSearch:
             else:
                 return {
                     "status_code": HTTPSTATUS.NOT_FOUND.code(),
-                    "message": f"File_id({file_id}) may not existed."
+                    "message": f"File_id({file_id}) may not existed in {database_type.upper()} database."
                 }
         except Exception as e:
             return {
@@ -159,6 +151,7 @@ class VideoSearch:
                     - limit: int
                     - files: List[str]
                     - user_id: str (Must be convert into integer)
+                    - database_type: str
             
             Output:
                 - status_code: 200/400/404
@@ -171,24 +164,28 @@ class VideoSearch:
         query = payload['query']
         limit = payload['limit']
         user_id = payload['user_id']
-        files = payload['files']         
+        files = payload['files']     
+        database_type = payload['database_type']    
         
         for file_id in files:
             is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
             if is_valid == False:
                 return {
                     "status_code": HTTPSTATUS.NOT_FOUND.code(),
-                    "message": f"File_id({file_id}) of user({user_id}) may not existed."
+                    "message": f"File_id({file_id}) of user({user_id}) may not existed in {database_type.upper()} database."
                 }    
         
         all_keyframes = []
+        txt = BLIP_TEXT_PROCESSORS["eval"](query)
+        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
+        text_features = np.array(text_features).astype(float).flatten().tolist()      
         for file_id in files:                
             payload_per_file = {
-                "query": query,
+                "embedding": text_features,
                 "limit": limit,
                 "file_id": file_id,
                 "user_id": user_id,
-                "type": 'text'
+                "database_type": database_type,
             }
             result = VideoSearch.query_video(payload= payload_per_file)
             if result['status_code'] == HTTPSTATUS.OK.code():
@@ -212,6 +209,7 @@ class VideoSearch:
                 - query: str
                 - limit: int
                 - user_id: str (Must be convert into integer)
+                - database_type: str
             
             Output:
                 - status_code: 200/400/404
@@ -222,6 +220,7 @@ class VideoSearch:
         query = payload['query']
         limit = payload['limit']
         user_id = payload['user_id']        
+        database_type = payload['database_type']
        
         txt = BLIP_TEXT_PROCESSORS["eval"](query)
         text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
@@ -231,11 +230,20 @@ class VideoSearch:
         db = psg_manager.get_session(hased_session= hashed_session)         
        
         try: 
+            is_null = 'NULL' if database_type == 'image' \
+                else "NOT NULL" if database_type == 'video' \
+                else "FAIL"
+            if is_null == "FAIL":
+                return {
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": "'database_type should be 'image' or 'video'."
+                }                 
             query_vector_str = f"[{','.join(map(str, text_features))}]"
             sql_query = text(f"""
                 SELECT *, (embedding <=> :query_vector) AS distance
                 FROM keyframes
                 WHERE "user_id" = :user_id
+                AND "byte_offset" IS {is_null}
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -273,7 +281,7 @@ class VideoSearch:
                 }      
         except Exception as e:
             return {
-                "status_code": HTTPSTATUS.FORBIDDEN,
+                "status_code": HTTPSTATUS.FORBIDDEN.code(),
                 "error": str(e)
             } 
         
@@ -285,6 +293,7 @@ class VideoSearch:
                     - limit: int
                     - files: List[str]
                     - user_id: str (Must be convert into integer)
+                    - database_type: str 
             
             Output:
                 - status_code: 200/400/404
@@ -298,6 +307,7 @@ class VideoSearch:
         limit = payload['limit']
         user_id = payload['user_id']
         files = payload['files']    
+        database_type = payload['database_type']
         
         for file_id in files:
             is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
@@ -308,12 +318,22 @@ class VideoSearch:
                 }          
    
         all_keyframes = []
+        try:
+            raw_image = Image.open(image_path).convert('RGB')  
+        except Exception as e:
+            return {
+                "status_code": HTTPSTATUS.NOT_FOUND.code()
+            }
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
+        img_features = np.array(img_features).astype(float).flatten().tolist()        
         for file_id in files:                
             payload_per_file = {
-                "image_path": image_path,
+                "embedding": img_features,
                 "limit": limit,
                 "file_id": file_id,
                 "user_id": user_id,
+                "database_type": database_type,
                 "type": 'image'
             }
             result = VideoSearch.query_video(payload= payload_per_file)
@@ -346,7 +366,8 @@ class VideoSearch:
         """         
         image_path = payload['image_path']
         limit = payload['limit']
-        user_id = payload['user_id']        
+        user_id = payload['user_id']  
+        database_type = payload['database_type']      
        
         raw_image = Image.open(image_path).convert('RGB')
         img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
@@ -358,10 +379,20 @@ class VideoSearch:
         db = psg_manager.get_session(hased_session= hashed_session)         
        
         try: 
+            is_null = 'NULL' if database_type == 'image' \
+                else "NOT NULL" if database_type == 'video' \
+                else "FAIL"
+            if is_null == "FAIL":
+                return {
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": "'database_type should be 'image' or 'video'."
+                }               
+                
             sql_query = text(f"""
                 SELECT *, (embedding <=> :query_vector) AS distance
                 FROM keyframes
                 WHERE "user_id" = :user_id
+                AND "byte_offset" IS {is_null}
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -402,227 +433,7 @@ class VideoSearch:
                 "status_code": HTTPSTATUS.FORBIDDEN,
                 "error": str(e)
             }         
-   
-class OldVideoSearch: 
-    @staticmethod
-    def query_folder_with_text(payload):
-        # Định nghĩa câu lệnh SQL với placeholders
-        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
-        db = psg_manager.get_session(hased_session= hashed_session)  
-        
-        sql_query = text("""
-            SELECT *, (embedding <-> :query_vector) AS distance
-            FROM keyframes
-            WHERE "file_id" = :video_id
-            ORDER BY distance
-            LIMIT :limit;
-        """)
-        analysis_sql_query = text("""
-            EXPLAIN ANALYZE
-            SELECT *, (embedding <-> :query_vector) AS distance
-            FROM keyframes
-            WHERE "file_id" = :video_id
-            ORDER BY distance
-            LIMIT :limit;
-        """)
-        
-        query = payload['query']
-        limit = payload['limit']
-        files = payload['files']
-        
-        txt = BLIP_TEXT_PROCESSORS["eval"](query)
-        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
-        text_features = np.array(text_features).astype(float).flatten().tolist()
-        query_vector_str = f"[{','.join(map(str, text_features))}]"
-        
-        all_keyframes = []
-        try:
-            for file_id in files:
-                params = {
-                    "video_id": file_id,
-                    "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
-                    "limit": limit
-                }
-                begin_time = datetime.datetime.now()
-                result = db.execute(sql_query, params)
-                analysis = db.execute(analysis_sql_query, params).fetchall()
-                print("Analysis: ", analysis)
-                keyframes = result.fetchall()
-                print("Total time search: ", datetime.datetime.now() - begin_time)
 
-                current_kf = [get_result(kf) for kf in keyframes if kf.distance <= 1.19]
-                all_keyframes = [*all_keyframes, *current_kf]
-        except Exception as e:
-            db.rollback()
-            print("Error: ", e)
-            return {
-                "message": "Search folders with text failed"
-            }        
-        finally:
-            db.close()
-    
-        print("ALL KEYFRAMES WITH TEXT SEARCH: ", all_keyframes)
-        result_keyframes = sorted(all_keyframes, key= cosine_score)
-        return result_keyframes
-    
-    @staticmethod
-    def query_all_folder_with_text(payload):
-        """
-            Input:
-                payload: dictionary
-                    - query
-                    - limit
-                    - user_id
-        """
-        # Định nghĩa câu lệnh SQL với placeholders
-        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
-        db = psg_manager.get_session(hased_session= hashed_session)  
-        
-        sql_query = text("""
-            SELECT *, (embedding <-> :query_vector) AS distance
-            FROM keyframes
-            WHERE "user_id" = :user_id
-            ORDER BY distance
-            LIMIT :limit;
-        """)
-
-        query = payload['query']
-        limit = payload['limit']
-        user_id = payload['user_id']
-        
-        txt = BLIP_TEXT_PROCESSORS["eval"](query)
-        text_features = BLIP_MODEL.encode_text(txt, DEVICE).cpu().detach().numpy()
-        text_features = np.array(text_features).astype(float).flatten().tolist()
-        query_vector_str = f"[{','.join(map(str, text_features))}]"
-        
-        try:
-            params = {
-                "user_id": user_id,
-                "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
-                "limit": limit
-            }
-            begin_time = datetime.datetime.now()
-            result = db.execute(sql_query, params)
-                # analysis = db.execute(analysis_sql_query, params).fetchall()
-                # print("Analysis: ", analysis)
-            keyframes = result.fetchall()
-            print("Total time search: ", datetime.datetime.now() - begin_time)
-
-            current_kf = [get_result(kf) for kf in keyframes]
-            return current_kf
-        except Exception as e:
-            db.rollback()
-            print("Error: ", e)
-            return {
-                "message": "Search all folders by text failed!"
-            }
-        finally:
-            db.close()
-    
-    @staticmethod
-    def query_folder_with_image(payload):
-        # Định nghĩa câu lệnh SQL với placeholders
-        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
-        db = psg_manager.get_session(hased_session= hashed_session)  
-        
-        sql_query = text("""
-            SELECT *, (embedding <-> :query_vector) AS distance
-            FROM keyframes
-            WHERE "file_id" = :video_id
-            ORDER BY distance
-            LIMIT :limit;
-        """)
-        
-        raw_image = Image.open(payload['image_path']).convert('RGB')
-        limit = payload['limit']
-        files = payload['files']
-        
-        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
-        img_features = np.array(img_features).astype(float).flatten().tolist()
-        query_vector_str = f"[{','.join(map(str, img_features))}]"
-        
-        all_keyframes = []
-        try:
-            for file_id in files:
-                params = {
-                    "video_id": file_id,
-                    "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
-                    "limit": limit
-                }
-                result = db.execute(sql_query, params)
-                keyframes = result.fetchall()
-                current_kf = [get_result(kf) for kf in keyframes]
-                all_keyframes = [*all_keyframes, *current_kf]
-        except Exception as e:
-            db.rollback()
-            print("Error: ", e)
-            return {
-                "message": "Search folders with image failed"
-            }
-        finally:
-            db.close()
-    
-        print("ALL KEYFRAMES WITH IMAGE SEARCH: ", all_keyframes)
-
-        result_keyframes = sorted(all_keyframes, key= cosine_score)
-        return result_keyframes
-    
-    
-    @staticmethod
-    def query_all_folder_with_image(payload):
-        """
-            Input:
-                payload: dictionary
-                    - image_path
-                    - limit
-                    - user_id
-        """
-        # Định nghĩa câu lệnh SQL với placeholders
-        hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
-        db = psg_manager.get_session(hased_session= hashed_session)  
-        
-        sql_query = text("""
-            SELECT *, (embedding <-> :query_vector) AS distance
-            FROM keyframes
-            WHERE "user_id" = :user_id
-            ORDER BY distance
-            LIMIT :limit;
-        """)
-
-        raw_image = Image.open(payload['image_path']).convert('RGB')
-        limit = payload['limit']
-        user_id = payload['user_id']
-        
-        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-        img_features = BLIP_MODEL.encode_image(img).cpu().detach().numpy()
-        img_features = np.array(img_features).astype(float).flatten().tolist()
-        query_vector_str = f"[{','.join(map(str, img_features))}]"
-        
-        try:
-            params = {
-                "user_id": user_id,
-                "query_vector": query_vector_str,  # Assuming req.query is the vector or will be converted to one
-                "limit": limit
-            }
-            begin_time = datetime.datetime.now()
-            result = db.execute(sql_query, params)
-                # analysis = db.execute(analysis_sql_query, params).fetchall()
-                # print("Analysis: ", analysis)
-            keyframes = result.fetchall()
-            print("Total time search: ", datetime.datetime.now() - begin_time)
-
-            current_kf = [get_result(kf) for kf in keyframes]
-            return current_kf
-        except Exception as e:
-            db.rollback()
-            print("Error: ", e)
-            return {
-                "message": "Search all folders with image failed!"
-            }
-        finally:
-            db.close()    
-            
 class OCRSearch:
     @staticmethod
     def query_video(payload): 
@@ -633,6 +444,7 @@ class OCRSearch:
                     - limit: int
                     - file_id: str
                     - user_id: str (Must be convert into integer)
+                    - database_type: str
             
             Output:
                 - status_code: 200/400/404
@@ -646,15 +458,25 @@ class OCRSearch:
         limit = payload['limit']
         file_id = payload['file_id']  
         user_id = payload['user_id']  
+        database_type = payload['database_type']
         
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)    
         try:
+            is_null = 'NULL' if database_type == 'image' \
+                else "NOT NULL" if database_type == 'video' \
+                else "FAIL"
+            if is_null == "FAIL":
+                return {
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": "'database_type should be 'image' or 'video'."
+                }                 
             sql_query = text(f"""
                 SELECT *, ts_rank(to_tsvector('simple', ocr), plainto_tsquery('simple', :search_term || ':*')) AS kw_score
                 FROM keyframes
                 WHERE "user_id" = :user_id
                 AND "file_id" = :file_id
+                AND "byte_offset" IS {is_null}
                 AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
                 ORDER BY kw_score DESC
                 LIMIT :limit;
@@ -709,6 +531,7 @@ class OCRSearch:
                     - limit: int
                     - files: List[str]
                     - user_id: str (Must be convert into integer)
+                    - database_type: str (["image", "video"])
             
             Output:
                 - status_code: 200/400/404
@@ -721,7 +544,8 @@ class OCRSearch:
         ocr = payload['ocr']
         limit = payload['limit']
         user_id = payload['user_id']
-        files = payload['files']         
+        files = payload['files']    
+        database_type = payload['database_type']     
         
         for file_id in files:
             is_valid = DatabaseServices.is_file_exist(user_id= user_id, file_id= file_id)
@@ -737,7 +561,8 @@ class OCRSearch:
                 "ocr": ocr,
                 "limit": limit,
                 "file_id": file_id,
-                "user_id": user_id
+                "user_id": user_id,
+                "database_type": database_type
             }
             result = OCRSearch.query_video(payload= payload_per_file)
             if result['status_code'] == HTTPSTATUS.OK.code():
@@ -763,6 +588,7 @@ class OCRSearch:
                     - ocr: str
                     - limit: int
                     - user_id: str (Must be convert into integer)
+                    - database_type: str
             
             Output:
                 - status_code: 200/400/404
@@ -775,14 +601,25 @@ class OCRSearch:
         ocr = payload['ocr']
         limit = payload['limit']
         user_id = payload['user_id']
+        database_type = payload['database_type']
         
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)    
+        
         try:
+            is_null = 'NULL' if database_type == 'image' \
+                else "NOT NULL" if database_type == 'video' \
+                else "FAIL"
+            if is_null == "FAIL":
+                return {
+                    "status_code": HTTPSTATUS.BAD_REQUEST.code(),
+                    "message": "'database_type should be 'image' or 'video'."
+                }               
             sql_query = text(f"""
                 SELECT *, ts_rank(to_tsvector('simple', ocr), plainto_tsquery('simple', :search_term || ':*')) AS kw_score
                 FROM keyframes
                 WHERE "user_id" = :user_id
+                AND "byte_offset" IS {is_null}
                 AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
                 ORDER BY kw_score DESC
                 LIMIT :limit;
