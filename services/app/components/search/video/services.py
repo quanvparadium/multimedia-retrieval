@@ -426,7 +426,10 @@ class VideoSearch:
             else:
                 return {
                     "status_code": HTTPSTATUS.NOT_FOUND.code(),
-                    "message": f"Image path {image_path} related to user_id({user_id}) could not be found in cluster database."
+                    "message": f"Image path {image_path} related to user_id({user_id}) could not be found in cluster database.",
+                    "result": {
+                        "data": []
+                    }
                 }      
         except Exception as e:
             return {

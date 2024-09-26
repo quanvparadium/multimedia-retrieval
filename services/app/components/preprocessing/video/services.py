@@ -3,7 +3,7 @@ import sys
 import subprocess
 import json
 from tqdm import tqdm
-import datetime
+from datetime import datetime
 from typing import List
 import numpy as np
 import ffmpeg
@@ -67,6 +67,10 @@ def get_width_and_height(video_path):
     width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
     return width, height
 
+def get_image_property(image_path):
+    img = Image.open(image_path) 
+    return img.width, img.height
+
 def get_frame_byte_offset(video_path, target_frame_index):
     ffprobe_cmd = [
         'ffprobe', '-show_packets', '-print_format', 'json', '-i', video_path
@@ -117,8 +121,9 @@ def extend_keyframe(array: List[str]):
         a2 = array[i + 1]
             
         # Chèn hai số mới chia đều khoảng cách
-        new_array.append((2 * a1 + a2) // 3)
-        new_array.append((a1 + 2 * a2) // 3)
+        # new_array.append((2 * a1 + a2) // 3)
+        # new_array.append((a1 + 2 * a2) // 3)
+        new_array.append((a1 + a2) // 2)
         
         # Thêm số a2 (số thứ hai trong cặp)
         new_array.append(a2)
@@ -169,12 +174,55 @@ class VideoPreprocessing:
         with Image.open(image_path) as img:
             V_WIDTH, V_HEIGHT = img.size
             
+        # raw_image = Image.open(image_path)
+        # ocr_text = EASY_OCR.readtext(image_path, detail=0)
+        # img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        # image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
+        # image_features = np.array(image_features).astype(float).flatten().tolist()
+
+        func_start_time = datetime.now()
+        
+        start_time = datetime.now()
         raw_image = Image.open(image_path)
+        print(f"Open image time: {datetime.now() - start_time} seconds")
+        
+        # ocr_start_time = datetime.now()
+        # start_time = datetime.now()
+        # ocr_img, ocr_img_cv_grey = reformat_input(image= image_path)
+        # print(f"OCR reformat time: {datetime.now() - start_time} seconds")
+        
+        # start_time = datetime.now()
+        # ocr_horizontal_list, ocr_free_list = EASY_OCR.detect(ocr_img)
+        # ocr_horizontal_list, ocr_free_list = ocr_horizontal_list[0], ocr_free_list[0]
+        # print(f"OCR detect time: {datetime.now() - start_time} seconds")
+        
+        # start_time = datetime.now()
+        # ocr_text = EASY_OCR.recognize(ocr_img_cv_grey, ocr_horizontal_list, ocr_free_list, detail= 0, reformat= False)
+        # print(f"OCR recognize time: {datetime.now() - start_time} seconds")
+        
+        # print(f"OCR - Total time: {datetime.now() - ocr_start_time} seconds")
+
+        start_time = datetime.now()
         ocr_text = EASY_OCR.readtext(image_path, detail=0)
-        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
+        print(f"OCR - An image - Total time: {datetime.now() - start_time} seconds")
+        
+        start_time = datetime.now()
+        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE) 
+        print(f"BLIP processor time: {datetime.now() - start_time} seconds")
+        
+        start_time = datetime.now()
         image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
+        print(f"Extract BLIP feature time: {datetime.now() - start_time} seconds")
+        
+        start_time = datetime.now()
         image_features = np.array(image_features).astype(float).flatten().tolist()
-                        
+        print(f"Convert float type time: {datetime.now() - start_time} seconds")
+        
+        
+        
+        
+        
+        start_time = datetime.now()                     
         property = {
             'file_id': payload['file_id'],
             'user_id': payload['user_id'],
@@ -187,6 +235,9 @@ class VideoPreprocessing:
             "address": image_path
         }
         img_result = VideoPreprocessing.create_image(property)
+        print(f"Insert into database time: {datetime.now() - start_time} seconds")
+        print(f"Total time: {datetime.now() - func_start_time} seconds")
+        
         if img_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
             return {
                 "status_code": HTTPSTATUS.BAD_REQUEST.code(),
@@ -292,7 +343,7 @@ class VideoPreprocessing:
         # print(results)
         
         print("Start sequential extract embedding")
-        begin_time = datetime.datetime.now()
+        begin_time = datetime.now()
         # for kf_output_path in kf_output_paths:
         for kf_frame_number in keyframe_indices:
             kf_output_path = os.path.join(f'{keyframe_path}/keyframes/{file_id}', f"{file_id}_{kf_frame_number}.jpg")
@@ -322,6 +373,7 @@ class VideoPreprocessing:
                 "address": kf_output_path
             }
             kf_result = VideoPreprocessing.create_keyframe(property)
+            
             if kf_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
                 return {
                     "status_code": HTTPSTATUS.BAD_REQUEST.code(),
@@ -333,7 +385,7 @@ class VideoPreprocessing:
         psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
         psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
 
-        print("Time embeded sequential: ", datetime.datetime.now() - begin_time)
+        print("Time embeded sequential: ", datetime.now() - begin_time)
         print("Keyframes extracted and saved successfully.")
         
         return {
