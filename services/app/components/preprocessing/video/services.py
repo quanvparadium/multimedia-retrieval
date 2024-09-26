@@ -1,13 +1,17 @@
 import os
 import sys
 import subprocess
+import base64
 import json
+import requests
+from io import BytesIO
 from tqdm import tqdm
 from datetime import datetime
 from typing import List
 import numpy as np
 import ffmpeg
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from connections.postgres import psg_manager
@@ -27,7 +31,7 @@ from components.ai.visual import (
     BLIP_TEXT_PROCESSORS, 
     BLIP_VIS_PROCESSORS
 )
-from components.ai.ocr_reader import EASY_OCR
+# from components.ai.ocr_reader import EASY_OCR
 from config.status import HTTPSTATUS
 
 DEFAULT_CHECKPOINT_PATH = "./models/transnet_model-F16_L3_S2_D256"
@@ -119,10 +123,6 @@ def extend_keyframe(array: List[str]):
     for i in range(len(array) - 1):
         a1 = array[i]
         a2 = array[i + 1]
-            
-        # Chèn hai số mới chia đều khoảng cách
-        # new_array.append((2 * a1 + a2) // 3)
-        # new_array.append((a1 + 2 * a2) // 3)
         new_array.append((a1 + a2) // 2)
         
         # Thêm số a2 (số thứ hai trong cặp)
@@ -130,16 +130,42 @@ def extend_keyframe(array: List[str]):
         
     return new_array        
     
+def ocr_extraction(raw_image):
+    ocr_start_time = datetime.now()
+    buffered = BytesIO()
+    raw_image.save(buffered, format="JPEG")
+    base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    # Gửi ảnh tới API
+    start_time = datetime.now()
+    with open('./local_domain.txt', 'r') as f:
+        f.seek(0)
+        ngrok_url = f.read()
+        f.close()
+    print("Time: ", datetime.now() - start_time)
+    try:
+        ocr_api = f"{ngrok_url}/api/ocr"
+        ngrok_payload = {'image_byte': base64_str}
+        api_start_time = datetime.now()
+        response = requests.post(ocr_api, json=ngrok_payload)
+        data_str = response.content.decode('utf-8')
+        result = json.loads(data_str)
+        print("OCRTIME: ", datetime.now() - api_start_time)
+        print("Total OCR time: ", datetime.now() - ocr_start_time)
+        return result['data']
+    except Exception as e:
+        print("\033[32m>>> OCR API FAILED")
+        return []
+        
+def blip_extraction(raw_image):
+    start_time = datetime.now()
 
-def ocr_detection(img_path):
-    import httpx
-    import asyncio
-    async def call(img_path):
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://localhost:4002/ocr", json={"file_path": img_path})
-            return response.json()
-    return asyncio.run(call(img_path))
-    
+    img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE) 
+    image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
+    image_features = np.array(image_features).astype(float).flatten().tolist()
+    print("Total BLIP time: ", datetime.now() - start_time)
+    return image_features        
+        
+
 
 class VideoPreprocessing:
     @staticmethod
@@ -151,16 +177,23 @@ class VideoPreprocessing:
                 - file_path: str
                 - store: str
                 - format: str
+                - accelerate: bool = True
+                - skip_transaction: bool = False
+                - indexing: bool = True                
             
             Output:
                 - status_code: 201/400/422.
                 - message": "..."
         """
+        user_id = payload['user_id']
+        file_id = payload['file_id']        
+        accelerate = payload['accelerate']
+        indexing = payload['indexing']
+        skip_transaction = payload['skip_transaction']
+        
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
         
-        user_id = payload['user_id']
-        file_id = payload['file_id']        
         result = db.query(Keyframe).filter(and_(Keyframe.file_id == file_id, Keyframe.user_id == user_id)).all()
         if len(result) > 0:
             return {
@@ -173,55 +206,25 @@ class VideoPreprocessing:
         image_path = payload["file_path"]
         with Image.open(image_path) as img:
             V_WIDTH, V_HEIGHT = img.size
+
+        ocr_raw_image = Image.open(image_path)
+        blip_raw_image = Image.open(image_path)
+        
+        if accelerate:
+            multithread_time = datetime.now()
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                ocr_future = executor.submit(ocr_extraction, ocr_raw_image)
+                blip_future = executor.submit(blip_extraction, blip_raw_image)
+                # Đợi kết quả từ cả hai hàm
+                ocr_text = ocr_future.result()
+                blip_image_features = blip_future.result()
+            print("Multi threead time: ", datetime.now() - multithread_time)
+        else:
+            sequential_time = datetime.now()
+            ocr_text = ocr_extraction(ocr_raw_image)
+            blip_image_features = blip_extraction(blip_raw_image)
+            print("Sequential time: ", datetime.now() - sequential_time)
             
-        # raw_image = Image.open(image_path)
-        # ocr_text = EASY_OCR.readtext(image_path, detail=0)
-        # img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE)
-        # image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-        # image_features = np.array(image_features).astype(float).flatten().tolist()
-
-        func_start_time = datetime.now()
-        
-        start_time = datetime.now()
-        raw_image = Image.open(image_path)
-        print(f"Open image time: {datetime.now() - start_time} seconds")
-        
-        # ocr_start_time = datetime.now()
-        # start_time = datetime.now()
-        # ocr_img, ocr_img_cv_grey = reformat_input(image= image_path)
-        # print(f"OCR reformat time: {datetime.now() - start_time} seconds")
-        
-        # start_time = datetime.now()
-        # ocr_horizontal_list, ocr_free_list = EASY_OCR.detect(ocr_img)
-        # ocr_horizontal_list, ocr_free_list = ocr_horizontal_list[0], ocr_free_list[0]
-        # print(f"OCR detect time: {datetime.now() - start_time} seconds")
-        
-        # start_time = datetime.now()
-        # ocr_text = EASY_OCR.recognize(ocr_img_cv_grey, ocr_horizontal_list, ocr_free_list, detail= 0, reformat= False)
-        # print(f"OCR recognize time: {datetime.now() - start_time} seconds")
-        
-        # print(f"OCR - Total time: {datetime.now() - ocr_start_time} seconds")
-
-        start_time = datetime.now()
-        ocr_text = EASY_OCR.readtext(image_path, detail=0)
-        print(f"OCR - An image - Total time: {datetime.now() - start_time} seconds")
-        
-        start_time = datetime.now()
-        img = BLIP_VIS_PROCESSORS["eval"](raw_image).unsqueeze(0).to(DEVICE) 
-        print(f"BLIP processor time: {datetime.now() - start_time} seconds")
-        
-        start_time = datetime.now()
-        image_features = BLIP_MODEL.encode_image(img).detach().cpu().numpy()
-        print(f"Extract BLIP feature time: {datetime.now() - start_time} seconds")
-        
-        start_time = datetime.now()
-        image_features = np.array(image_features).astype(float).flatten().tolist()
-        print(f"Convert float type time: {datetime.now() - start_time} seconds")
-        
-        
-        
-        
-        
         start_time = datetime.now()                     
         property = {
             'file_id': payload['file_id'],
@@ -229,14 +232,13 @@ class VideoPreprocessing:
             'format': payload['format'],
             "width": int(V_WIDTH),
             "height": int(V_HEIGHT),
-            "embedding": image_features,
+            "embedding": blip_image_features,
             "ocr": ocr_text if len(ocr_text) > 0 else None,
             "store": payload['store'],
             "address": image_path
         }
         img_result = VideoPreprocessing.create_image(property)
         print(f"Insert into database time: {datetime.now() - start_time} seconds")
-        print(f"Total time: {datetime.now() - func_start_time} seconds")
         
         if img_result['status_code'] == HTTPSTATUS.BAD_REQUEST.code():
             return {
@@ -250,8 +252,9 @@ class VideoPreprocessing:
                     "message": f"File_id({file_id}) should be unique because another 'user_id' has the same file_id."
                 }
         print(f"Saved and extracted image successfully!")
-        psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
-        psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+        if indexing:
+            psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+            psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
           
         return {
             "status_code": HTTPSTATUS.CREATED.code(),
@@ -276,6 +279,9 @@ class VideoPreprocessing:
         # Step 1: Check file if exists in database
         file_id = payload['file_id']
         user_id = payload['user_id']
+        accelerate = payload['accelerate']
+        indexing = payload['indexing']
+        skip_transaction = payload['skip_transaction']
         # print("User id: ", payload['user_id'])
         hashed_session = psg_manager.hash_session(user_id= payload['user_id'])
         db = psg_manager.get_session(hased_session= hashed_session)
@@ -350,13 +356,23 @@ class VideoPreprocessing:
             time_at_frame = get_time_at_frame(frame_number=kf_frame_number, frame_rate=frame_rate)
             target_byte_offset = get_frame_byte_offset(video_path=video_path, target_frame_index=kf_frame_number)
             
-            # Extract embedding
-            seq_raw_image = Image.open(kf_output_path)
-            ocr_text = EASY_OCR.readtext(kf_output_path, detail=0)
-            seq_img = BLIP_VIS_PROCESSORS["eval"](seq_raw_image).unsqueeze(0).to(DEVICE)
-            seq_image_features = BLIP_MODEL.encode_image(seq_img).detach().cpu().numpy()
-            print("Get features with shape: ", seq_image_features.shape)
-            seq_image_features = np.array(seq_image_features).astype(float).flatten().tolist()
+            ocr_raw_image = Image.open(kf_output_path)
+            blip_raw_image = Image.open(kf_output_path)
+            
+            if accelerate:
+                multithread_time = datetime.now()
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    ocr_future = executor.submit(ocr_extraction, ocr_raw_image)
+                    blip_future = executor.submit(blip_extraction, blip_raw_image)
+                    # Đợi kết quả từ cả hai hàm
+                    ocr_text = ocr_future.result()
+                    blip_image_features = blip_future.result()
+                print("Multi threead time: ", datetime.now() - multithread_time)
+            else:
+                sequential_time = datetime.now()
+                ocr_text = ocr_extraction(ocr_raw_image)
+                blip_image_features = blip_extraction(blip_raw_image)
+                print("Sequential time: ", datetime.now() - sequential_time)        
             
             property = {
                 'file_id': payload['file_id'],
@@ -364,7 +380,7 @@ class VideoPreprocessing:
                 'format': 'jpg',
                 "width": int(V_WIDTH),
                 "height": int(V_HEIGHT),
-                "embedding": seq_image_features,
+                "embedding": blip_image_features,
                 "ocr": ocr_text if len(ocr_text) > 0 else None,
                 "frame_number": kf_frame_number,
                 "frame_second": time_at_frame,
@@ -381,9 +397,10 @@ class VideoPreprocessing:
                 }
             print(f"Extracted keyframe {kf_frame_number} to {kf_output_path}")
             
-        psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id, user_id=payload['user_id'])
-        psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
-        psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+        if indexing:
+            psg_manager.create_index_by_video(table_name='keyframes', file_id=file_id, user_id=payload['user_id'])
+            psg_manager.create_kw_index_by_user(table_name='keyframes', user_id=payload['user_id'])
+            psg_manager.create_index_by_user(table_name='keyframes', user_id=payload['user_id'])
 
         print("Time embeded sequential: ", datetime.now() - begin_time)
         print("Keyframes extracted and saved successfully.")

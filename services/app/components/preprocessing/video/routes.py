@@ -20,6 +20,9 @@ class VideoItem(BaseModel):
     file_path: str
     store: str
     format: str
+    accelerate: bool = True
+    skip_transaction: bool = False
+    indexing: bool = True
     
 class TestVideoItem(BaseModel):
     user_id: str
@@ -39,7 +42,10 @@ def extract_image(item: VideoItem):
         "file_id": item.file_id, #Mongo definition
         "file_path": item.file_path, # Actual storage
         "store": item.store, # Local or S3 Storage
-        "format": item.format
+        "format": item.format,
+        "accelerate": item.accelerate,
+        "indexing": item.indexing,
+        "skip_transaction": item.skip_transaction
     }
     try:
         int(item.user_id)
@@ -79,7 +85,10 @@ def extract_keyframe(item: VideoItem):
         "file_id": item.file_id, #Mongo definition
         "file_path": item.file_path, # Actual storage
         "store": item.store, # Local or S3 Storage
-        "threshold": 0.1
+        "threshold": 0.1,
+        "accelerate": item.accelerate,
+        "indexing": item.indexing,
+        "skip_transaction": item.skip_transaction
     }
     
     try:

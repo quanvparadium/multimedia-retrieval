@@ -10,7 +10,7 @@ def main():
     image_path = '../data/tests/keyframes/L03_V004/L03_V004_5265.jpg'
     image = Image.open(image_path)
 
-    start_time = datetime.now()
+    func_start_time = datetime.now()
     buffered = BytesIO()
     image.save(buffered, format="JPEG")
     base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -35,7 +35,7 @@ def main():
     print(type(response.content.decode('utf-8')))
     # print(type(response.content.data))
     result = json.loads(data_str)
-    print("API time: ", datetime.now() - start_time)
+    print("API time: ", datetime.now() - func_start_time)
 
     print(result["data"])
     # print("response: ", response.data)
