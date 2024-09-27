@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from components.preprocessing.documents.routes import preprocessRouter
 mainRouter = APIRouter()
 
-mainRouter.include_router(router=preprocessRouter, prefix="/api/document")
+mainRouter.include_router(router=preprocessRouter, prefix="/api")
 
 
 
