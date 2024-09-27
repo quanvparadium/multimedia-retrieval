@@ -32,7 +32,7 @@ export default function DocumentFile({ file }: IFileProps) {
     };
 
     return (
-        <div className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer">
+        <div className="">
             <div className="flex p-3 pt-0 items-center ">
                 <MdPictureAsPdf className="shrink-0" color="orange" />
                 <p className="ml-3 overflow-hidden flex-grow whitespace-nowrap ">{file.name}</p>

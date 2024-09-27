@@ -20,7 +20,7 @@ export default function ImageFile({ file }: IFileProps) {
 
   return (
     <div
-      className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer"
+      className=""
       onContextMenu={(e) => {
         e.stopPropagation(); // Prevent default context menu behavior
       }}

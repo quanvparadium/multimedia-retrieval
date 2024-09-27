@@ -28,7 +28,8 @@ export default function Keyframe({ keyframe }: any) {
         url = `${baseURL}/api/media/images/${fileId}`;
 
     }
-    const handleOnClick = () => {
+    const handleOnClick = (e: any) => {
+        e.stopPropagation();
         openModal();
         // setModalComponent(<ImageComponent url={url} name={name} />);
         if (keyframe.type == 'video')
@@ -93,7 +94,7 @@ export default function Keyframe({ keyframe }: any) {
             const res: any = await fileSystemApi.getParent(fileId);
             const parent = res.data;
             if (parent?.parentId) {
-                router.push(`/folders/${parent._id}`);
+                router.push(`/folders/${parent._id}?focus=${fileId}`);
             }
             else router.push("/my-drive");
         } catch (error) {

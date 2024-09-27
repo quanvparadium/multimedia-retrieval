@@ -9,14 +9,15 @@ import { LiaTrashAlt } from "react-icons/lia";
 import { baseURL } from "@/src/apis/axios-base";
 import DocumentFile from "./DocumentFile";
 import { logApi } from "@/src/apis/log/log.api";
+import classNames from "classnames";
 
-export default function File({ file }: IFileProps) {
+export default function File({ file, isFocus }: IFileProps) {
   if (!file?.metaData?.mimetype) return;
   const type = file.metaData.mimetype.split('/')[0];
   const [name, setName] = useState(file.name);
   const { openMenu, closeMenu, emitSignal }: any = useContext(MenuContext);
   const { openModal, setModalComponent, isOpen, closeModal }: any = useContext(ModalContext);
-
+  console.log(isFocus);
   let Component = ImageFile;
   if (type == "video") Component = VideoFile;
   if (type == "application") Component = DocumentFile;
@@ -94,9 +95,11 @@ export default function File({ file }: IFileProps) {
 
 
 
-  return <div className="" onContextMenu={handleRightClick} onClick={() => {
+  return <div className={classNames("p-3  rounded-xl  cursor-pointer", {
+    "bg-red-100 hover:bg-red-200": isFocus,
+    "bg-slate-100 hover:bg-slate-200": !isFocus
+  })} onContextMenu={handleRightClick} onClick={() => {
     logApi.upload('open', { fileSystemId: file._id });
-
   }}>
     <Component file={file} />
   </div>;
@@ -104,6 +107,7 @@ export default function File({ file }: IFileProps) {
 
 export interface IFileProps {
   file: IFile;
+  isFocus?: boolean;
 }
 
 export interface IFile {

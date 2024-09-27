@@ -22,7 +22,7 @@ export default function VideoFile({ file }: IFileProps) {
 
   return (
     <div
-      className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 cursor-pointer"
+      className=""
     >
       <div className="flex p-3 pt-0 items-center ">
         <RiFolderVideoFill className="shrink-0" color="red" />

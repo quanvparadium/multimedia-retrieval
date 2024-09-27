@@ -16,7 +16,6 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
   const openMenu = (data: any) => (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('2222 ');
     if (!setState) return;
     setState({
       data: data,
@@ -37,6 +36,7 @@ export default function MenuProvider({ children }: IMenuProviderProps) {
             position: "fixed",
             left: state.position.x,
             top: state.position.y,
+            zIndex: 100
           }}
         >
           <div className="w-[260px]  rounded-xl shadow-2 bg-white ">

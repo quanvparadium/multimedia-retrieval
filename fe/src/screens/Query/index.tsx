@@ -7,13 +7,19 @@ import { queryApi } from "@/src/apis/query/query.api";
 import { Menu, Popover, } from "@headlessui/react";
 import Checkbox from "@/src/components/CheckBox";
 import { toggleElement } from "@/src/helpers/array";
+import { json } from "stream/consumers";
+import { ModalContext } from "@/src/Providers/ModalProvider";
+import classNames from "classnames";
 
 
 const data = [];
 
+
 export default function Query() {
+    const limit = 12;
     const [file, setFile] = useState<File | undefined>();
     const { openMenu, closeMenu }: any = useContext(MenuContext);
+    const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
     const [query, setQuery] = useState("");
     const [use, setUse] = useState('text');
     const [type, setType] = useState('image');
@@ -21,10 +27,10 @@ export default function Query() {
     const [topK, setTopK] = useState(3);
     const [imageLink, setImageLink] = useState<string>();
     const [keyframes, setKeyframes] = useState([]);
+    const [infoKeyframes, setInfoKeyFrames] = useState<any>({});
     const router = useRouter();
     const [fileSystemId, setFileSystemId] = useState("");
     const [allTypes, setAllTypes] = useState<string[]>([]);
-
 
     useEffect(() => {
         if (use == 'text') setAllTypes(["image", "video", 'document', 'all']);
@@ -74,8 +80,17 @@ export default function Query() {
             formData.append("type", type);
         }
         formData.set("limit", String(topK));
-        const res = await queryApi.search(formData);
+        const res: any = await queryApi.search(formData);
         // console.log(res);
+        console.log(res.data);
+        const localInfo: any = {};
+        for (const [key, data] of Object.entries(res.data)) {
+            localInfo[key] ??= {};
+            localInfo[key].curPage = 1;
+            localInfo[key].totalPage = Math.ceil(data.length / limit);
+        }
+        setInfoKeyFrames(localInfo);
+        // console.log(localInfo);
         setKeyframes(res.data);
     };
 
@@ -94,10 +109,25 @@ export default function Query() {
         handleImageFile(file);
     };
 
+    // const handleMoreInfo = (keyframes: any, type: string) => {
+    //     const Modal = <div className=" bg-white cursor-pointer p-5 rounded-xl overflow-clip">
+    //         <div className="font-medium text-gray-600 capitalize text-lg">{type}</div>
+    //         <div className="grid grid-cols-4 gap-5 mt-3">
+    //             {
+    //                 keyframes.map((keyframe: any) => {
+    //                     return <Keyframe keyframe={keyframe} />;
+    //                 })
+    //             }
+    //         </div>
+    //     </div>;
+    //     setModalComponent(Modal);
+    //     openModal();
+    // };
+
+    console.log(infoKeyframes);
     return (
         <Layout>
             <div className=" py-6 px-4" onClick={closeMenu}>
-
                 <form
                     className=" bg-indigo-50 rounded-3xl p-6"
                     // onClick = {() => {console.log('form')}}
@@ -230,25 +260,71 @@ export default function Query() {
                             Submit
                         </button>
                     </div>
-
-
                 </form>
 
 
-                {keyframes && Object.entries(keyframes).map(([type, _keyframes]: any) => {
-                    if (!_keyframes?.length) return;
-                    return <div className="">
-                        <div className="font-medium text-gray-600 capitalize mt-5 text-lg">{type}</div>
-                        <div className="grid grid-cols-6 gap-5 mt-3 ">
-                            {
-                                _keyframes.map((keyframe: any) => {
-                                    return <Keyframe keyframe={keyframe} />;
-                                })
-                            }
-                        </div>
-                    </div>;
-                })}
+                <div className="mt-5">
+                    {keyframes && Object.entries(keyframes).map(([type, _keyframes]: any) => {
+                        const curPage = infoKeyframes[type].curPage;
+                        if (!_keyframes?.length) return;
+                        return <div className=" cursor-pointer p-5 rounded-xl overflow-clip" >
+                            <div className="font-medium text-gray-600 capitalize text-lg">{type}</div>
+                            <div className="grid grid-cols-6 gap-5 mt-3">
+                                {
+                                    _keyframes.map((keyframe: any, index: string) => {
+                                        if (Number(index) < (curPage - 1) * limit || Number(index) >= curPage * limit) return;
+                                        return <Keyframe keyframe={keyframe} />;
+                                    })
+                                }
+                            </div>
+                            <div className="w-full flex justify-end mt-2">
+                                <nav >
+                                    <ul className="list-style-none flex">
+                                        <li onClick={() => {
+                                            if (infoKeyframes[type].curPage > 1) {
+                                                const nextPage = infoKeyframes[type].curPage - 1;
+                                                const nextInfo = { ...infoKeyframes[type], curPage: nextPage };
+                                                setInfoKeyFrames({ ...infoKeyframes, [type]: nextInfo });
+                                            }
+                                        }}>
+                                            <div
+                                                className="relative block rounded bg-transparent px-3 py-1.5 text-sm text-neutral-600 transition-all duration-300 hover:bg-neutral-100 dark:text-white dark:hover:bg-neutral-700 dark:hover:text-white"
+
+
+                                            >
+                                                Prev</div>
+                                        </li>
+                                        {Array(infoKeyframes[type].totalPage).fill(0).map((_, index) => {
+                                            return <li onClick={() => {
+                                                const nextPage = Number(index) + 1;
+                                                const nextInfo = { ...infoKeyframes[type], curPage: nextPage };
+                                                setInfoKeyFrames({ ...infoKeyframes, [type]: nextInfo });
+                                            }}>
+                                                <div
+                                                    className={classNames("relative block rounded px-3 py-1.5 text-sm text-neutral-600 transition-all duration-300 hover:bg-neutral-100  dark:text-white dark:hover:bg-neutral-700 dark:hover:text-white",
+                                                        { "bg-blue-100": Number(index) + 1 == infoKeyframes[type].curPage }
+                                                    )}
+                                                >{Number(index) + 1}</div>
+                                            </li>;
+                                        })}
+                                        <li onClick={() => {
+                                            if (infoKeyframes[type].totalPage > infoKeyframes[type].curPage) {
+                                                const nextPage = infoKeyframes[type].curPage + 1;
+                                                const nextInfo = { ...infoKeyframes[type], curPage: nextPage };
+                                                setInfoKeyFrames({ ...infoKeyframes, [type]: nextInfo });
+                                            }
+                                        }}>
+                                            <div
+                                                className="relative block rounded bg-transparent px-3 py-1.5 text-sm text-neutral-600 transition-all duration-300 hover:bg-neutral-100 dark:text-white dark:hover:bg-neutral-700 dark:hover:text-white"
+                                            >Next</div>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>;
+                    })}
+                </div>
             </div>
-        </Layout>
+        </Layout >
     );
 }

@@ -25,6 +25,7 @@ export default function InFolder({ folderId }: IInFolder) {
   const [ancestorData, setAncestorData] = useState<any>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [focusedFile, setFocusedFile] = useState<any>(null);
   const [value, setValue] = useState("");
   const { openModal, setModalComponent, closeModal }: any = useContext(ModalContext);
   const { openMenu, closeMenu, signal, emitSignal }: any = useContext(MenuContext);
@@ -77,6 +78,12 @@ export default function InFolder({ folderId }: IInFolder) {
       </div>
     );
   };
+
+  useEffect(() => {
+    if (router.query?.focus) {
+      setFocusedFile(router.query?.focus);
+    }
+  }, [router.query]);
 
   // useEffect(() => {
   //   setModalComponent(<ModalComponent value={value} setValue={setValue} />);
@@ -138,7 +145,7 @@ export default function InFolder({ folderId }: IInFolder) {
       }
       {files?.length > 0 && <div className="mt-4">
         <p className="font-medium text-gray-600">Files</p>
-        <Files files={files} />
+        <Files files={files} focusedFile={focusedFile} />
       </div>}
       <input
         ref={fileInputRef}
