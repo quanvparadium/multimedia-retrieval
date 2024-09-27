@@ -41,7 +41,7 @@ export default class PreProcessingService {
             },
         },);
 
-        axios.post("http://localhost:4000/api/preprocessing/image", {
+        axios.post("http://localhost:3002/api/preprocessing/image", {
             "user_id": String(userId),
             "file_id": id,
             format: ext,
@@ -64,15 +64,15 @@ export default class PreProcessingService {
             },
         },);
 
-        // axios.post("http://localhost:4000/api/preprocessing/video", {
-        //     "user_id": String(userId),
-        //     "file_id": id,
-        //     format: ext,
-        //     store: storage,
-        //     "file_path": path
-        // }).catch((err) => {
-        //     console.log(err.response.data.detail);
-        // });
+        axios.post("http://localhost:3002/api/preprocessing/video", {
+            "user_id": String(userId),
+            "file_id": id,
+            format: ext,
+            store: storage,
+            "file_path": path
+        }).catch((err) => {
+            console.log(err.response.data.detail);
+        });
     }
 
     async handleDocument(newFileSystem: any) {
@@ -84,15 +84,15 @@ export default class PreProcessingService {
         const { pdf } = await import("pdf-to-img");
         const document = await pdf(path, { scale: 1 });
         let counter = 1;
-        // axios.post("http://localhost:5000/api/document", {
-        //     "user_id": String(userId),
-        //     "file_id": id,
-        //     format: ext,
-        //     store: storage,
-        //     "file_path": path
-        // }).catch((err) => {
-        //     console.log(err.response.data.detail);
-        // });
+        axios.post("http://localhost:3002/api/document", {
+            "user_id": String(userId),
+            "file_id": id,
+            format: ext,
+            store: storage,
+            "file_path": path
+        }).catch((err) => {
+            console.log(err.response.data.detail);
+        });
         for await (const image of document) {
             await fs.writeFile(`${keyFrameDir}/${id}_${counter}.jpg`, image);
             counter++;

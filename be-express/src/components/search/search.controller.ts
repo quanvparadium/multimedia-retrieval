@@ -59,14 +59,18 @@ export const querySearch = async (req: Request, res: Response, next: NextFunctio
         let res;
         if (!file) {
             if (type != 'document') {
-                res = await axios.post("http://localhost:4000/api/search/folder/keyframe/text", {
+                res = await axios.post("http://localhost:3002/api/search/folder/keyframe/text", {
                     query,
                     limit,
-                    files: fileIds
+                    files: fileIds,
+                    ocr: query,
+                    prior: "semantic",
+                    user_id: String(userId)
                 });
+                console.log(res.data);
             }
             else {
-                res = await axios.post("http://localhost:5000/api/document/search-folder", {
+                res = await axios.post("http://localhost:3002/api/document/search-all", {
                     query,
                     limit,
                     files: fileIds
@@ -74,13 +78,13 @@ export const querySearch = async (req: Request, res: Response, next: NextFunctio
             }
         }
         else {
-            res = await axios.post("http://localhost:4000/api/search/folder/keyframe/image", {
+            res = await axios.post("http://localhost:3002/api/search/folder/keyframe/image", {
                 image_path: file.filepath,
                 limit,
                 files: fileIds
             });
         }
-        if (res) result[type] = res.data.result.filter((_: any, id: any) => id < 12).map((data: any) => ({ ...data, type }));
+        if (res) result[type] = res.data.result.data.map((data: any) => ({ ...data, type }));
     }
 
     // if (!file) {

@@ -55,12 +55,25 @@ services:
     networks:
       - app_network
 
+  nginx:
+    image: nginx:latest
+    container_name: api_gateway
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # networks:
+    #   - app_network
+
 volumes:
   postgres_data:
   postgres_data_1:
-  postgres_data_2:
+  postgres_data_2: 
   mongo_data:
   meili_data:
+
 
 networks:
   app_network:
