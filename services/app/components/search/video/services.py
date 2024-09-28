@@ -194,12 +194,20 @@ class VideoSearch:
                 all_keyframes = [*all_keyframes, *current_kf]
             else:
                 print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
+        data_result = sorted(all_keyframes, key=cosine_score)        
+        score_data = [kf['cosine_score'] for kf in data_result]
+        ranker = get_rank(score_data)
+        print("Data before re-rank: ", data_result)
+        for idx, keyframe in enumerate(data_result):
+            keyframe['Rank_score'] = ranker[idx]
+        print("Data after re-rank: ", data_result)
+        
         return {
             "status_code": HTTPSTATUS.OK.code(),
             "message": "Semantic folder search successfully!",
             "count": len(all_keyframes),
             "result": {
-                "data": sorted(all_keyframes, key=cosine_score)
+                "data": data_result
             }
         }
 
@@ -342,12 +350,20 @@ class VideoSearch:
                 all_keyframes = [*all_keyframes, *data]
             else:
                 print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
+        data_result = sorted(all_keyframes, key=cosine_score)        
+        score_data = [kf['cosine_score'] for kf in data_result]
+        ranker = get_rank(score_data)
+        print("Data before re-rank: ", data_result)
+        for idx, keyframe in enumerate(data_result):
+            keyframe['Rank_score'] = ranker[idx]
+        print("Data after re-rank: ", data_result)
+                        
         return {
             "status_code": HTTPSTATUS.OK.code(),
             "message": "Semantic folder search successfully!",
             "count": len(all_keyframes),
             "result": {
-                "data": sorted(all_keyframes, key=cosine_score)
+                "data": data_result
             }
         }   
     
@@ -734,7 +750,7 @@ class EnsembleSearch:
         data = sorted(ensemble_ranker, key=get_ensemble_score, reverse= True)
         return {
             "message": "success",
-            "data": data if len(data) < output_top_k else data[:output_top_k]
+            "data": data if len(data) < output_top_k else data
         }
                 
         

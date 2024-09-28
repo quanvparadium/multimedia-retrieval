@@ -10,8 +10,11 @@ def get_result(kf):
         "frame_second": kf.frame_second
     }
 
-def cosine_score(kf):
-    return kf['cosine_score']
+def cosine_score(kf: dict):
+    if "cosine_score" in kf.keys():
+        return kf['cosine_score']
+    else:
+        return 1.01
 
 def kw_score(kf):
     return kf['TF_IDF_score']
