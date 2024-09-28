@@ -102,10 +102,17 @@ class PostgresManager:
 
     def create_index_by_user(self, table_name, user_id: str, type_index: str = "IVFFlat"):
         is_user_index_exists = self.index_exists(table_name=table_name, index_name=f'ivflat_idx_by_user_{user_id}', user_id= user_id)
+        hashed_session = self.hash_session(user_id)
+        rb_index = text("""RE{choice} INDEX ivflat_idx_by_user_{user};""".format(choice="INDEX", user=user_id))
         if is_user_index_exists:
             print(f"\033[32m>>> {type_index} Index embedding by user_id({user_id}) is EXISTED.\033[0m")
+            for idx, engine in enumerate(self.engines):
+                if idx == hashed_session:
+                    with engine.connect() as connection:
+                        connection.execute(rb_index)
+                        connection.commit()
+                    print(f"\033[33m>>> {type_index} Index embedding by user_id({user_id}) on TABLE {table_name} is EXISTED.\033[0m")            
             return None
-        hashed_session = self.hash_session(user_id)
         create_index_query = text(f""" CREATE INDEX ivflat_idx_by_user_{user_id} ON {table_name} USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10) WHERE (\"user_id\" = :user_id);""") 
         try:
             for idx, engine in enumerate(self.engines):
