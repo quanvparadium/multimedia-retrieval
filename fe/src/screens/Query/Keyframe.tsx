@@ -20,10 +20,10 @@ export default function Keyframe({ keyframe }: any) {
     const { openMenu, closeMenu }: any = useContext(MenuContext);
     const router = useRouter();
     const fileId = keyframe.fileId ?? keyframe.file_id;
-    const frameNumber = keyframe.frame_number ?? (keyframe.page + 1);
+    const frameNumber = keyframe.frame_number ?? (keyframe.page_number + 1);
 
     const name = `${fileId}_${frameNumber}`;
-    let url = `${baseURL}/api/keyframes/${frameNumber ?? keyframe.page}/files/${fileId}`;
+    let url = `${baseURL}/api/keyframes/${frameNumber}/files/${fileId}`;
     if (keyframe.type == 'image') {
         url = `${baseURL}/api/media/images/${fileId}`;
 

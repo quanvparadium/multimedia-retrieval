@@ -21,9 +21,6 @@ export default function ImageFile({ file }: IFileProps) {
   return (
     <div
       className=""
-      onContextMenu={(e) => {
-        e.stopPropagation(); // Prevent default context menu behavior
-      }}
     >
       <div className="flex p-3 pt-0 items-center ">
         <FaImage className="" color="orange" />
