@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from connections.postgres import psg_manager
-from sqlalchemy import Column, Integer, String, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, TIMESTAMP, func, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_method
 from pgvector.sqlalchemy import Vector
@@ -19,7 +19,7 @@ class PGDocument(psg_manager.Base):
     format = Column(String, nullable=False)
     
     collection_id = Column(String, nullable=True)
-    page_content = Column(String, nullable=True)
+    page_content = Column(JSON, nullable=True)
     cmetadata = Column(JSONB, nullable=True)
     embedding = Column(Vector(768), nullable=True)
     store = Column(String, nullable=False, default='local')
