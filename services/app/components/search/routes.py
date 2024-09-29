@@ -63,7 +63,7 @@ class AllImageSearchBody(BaseModel):
     database_type: str
     
 def WrapperResponse(status_code: int, message: str, data: List[object] = None):
-    if data:
+    if type(data) == type([]):
         return JSONResponse(
             status_code= status_code,
             content= {
