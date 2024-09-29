@@ -4,7 +4,12 @@ from components.preprocessing.video.routes import videoPreprocessRouter
 
 # from components.extract.routes import extractRouter
 from components.search.routes import searchRouter
+from connections.postgres import psg_manager
 from tests.routes import testRouter
+from pydantic import BaseModel
+
+class RebuildRequestBody(BaseModel):
+    user_id: str
 
 mainRouter = APIRouter()
 
@@ -47,6 +52,20 @@ def reset_domain():
             "domain": ngrok_url,
             "request_time": datetime.now() - start_time
         }
+
+@mainRouter.post("/rebuild")
+def rebuild_index(req: RebuildRequestBody):
+    user_id = req.user_id
+    psg_manager.rebuild_index(table_name= 'keyframes', user_id= user_id)
+    return {
+        "message": "Rebuilt successfully!"
+    }
+    
+    
+    
+    
+
+
 
 @mainRouter.get("/migrate")
 def home():

@@ -190,7 +190,7 @@ class VideoSearch:
             result = VideoSearch.query_video(payload= payload_per_file)
             if result['status_code'] == HTTPSTATUS.OK.code():
                 data = result['result']['data']
-                current_kf = [kf for kf in data if kf['cosine_score'] <= 0.75]
+                current_kf = [kf for kf in data if kf['cosine_score'] <= 0.73]
                 all_keyframes = [*all_keyframes, *current_kf]
             else:
                 print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
@@ -279,7 +279,7 @@ class VideoSearch:
                             "frame_second": kf.frame_second,  
                             "type": "video" if kf.byte_offset else "image",                         
                             "Rank_score": ranker[idx]
-                        } for idx, kf in enumerate(kf_res)]
+                        } for idx, kf in enumerate(kf_res) if kf.distance <= 0.73]
                     }
                 }
             else:
@@ -347,7 +347,8 @@ class VideoSearch:
             result = VideoSearch.query_video(payload= payload_per_file)
             if result['status_code'] == HTTPSTATUS.OK.code():
                 data = result['result']['data']
-                all_keyframes = [*all_keyframes, *data]
+                current_kf = [kf for kf in data if kf['cosine_score'] <= 0.22]                
+                all_keyframes = [*all_keyframes, *current_kf]
             else:
                 print(f"\033[91m>>> Please check again file_id({file_id}) - user_id({user_id})!\033[0m")
         data_result = sorted(all_keyframes, key=cosine_score)        
@@ -436,7 +437,7 @@ class VideoSearch:
                             "frame_second": kf.frame_second,  
                             "type": "video" if kf.byte_offset else "image",                                                  
                             "Rank_score": ranker[idx]
-                        } for idx, kf in enumerate(kf_res)]
+                        } for idx, kf in enumerate(kf_res) if kf.distance <= 0.22]
                     }
                 }
             else:
