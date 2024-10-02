@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from connections.postgres import psg_manager
-from sqlalchemy import Column, Integer, Float, String, func, TIMESTAMP, JSON
+from sqlalchemy import Column, Integer, Float, String, func, TIMESTAMP, JSON, Boolean
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.ext.hybrid import hybrid_method
     
@@ -27,7 +27,7 @@ class Keyframe(psg_manager.Base):
     address = Column(String, nullable=False)
     createdAt = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     updatedAt = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)
-
+    isDeleted = Column(Boolean, default= False)
     
     @hybrid_method
     def distance(self, query_vector):

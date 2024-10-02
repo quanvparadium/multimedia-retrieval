@@ -52,7 +52,7 @@ def find_optimal_weight(semantic_list, ocr_list, target_list):
         if avg_score > best_score:
             best_score = avg_score
             best_weight = weight
-    
+            
     return best_weight, best_score
 
 # Ví dụ sử dụng

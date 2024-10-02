@@ -1,9 +1,13 @@
 import os
 from fastapi import APIRouter, HTTPException
+
 from components.preprocessing.video.routes import videoPreprocessRouter
+
 
 # from components.extract.routes import extractRouter
 from components.search.routes import searchRouter
+from components.routes import keyframeRouter
+
 from connections.postgres import psg_manager
 from tests.routes import testRouter
 from pydantic import BaseModel
@@ -15,6 +19,7 @@ mainRouter = APIRouter()
 
 mainRouter.include_router(router=videoPreprocessRouter, prefix="/preprocessing")
 mainRouter.include_router(router=searchRouter, prefix="/search")
+mainRouter.include_router(router=keyframeRouter, prefix="/keyframes")
 mainRouter.include_router(router=testRouter, prefix="/test")
 
 @mainRouter.get("/")
@@ -60,12 +65,6 @@ def rebuild_index(req: RebuildRequestBody):
     return {
         "message": "Rebuilt successfully!"
     }
-    
-    
-    
-    
-
-
 
 @mainRouter.get("/migrate")
 def home():
@@ -74,3 +73,4 @@ def home():
     return {
         'message': 1
     }
+    

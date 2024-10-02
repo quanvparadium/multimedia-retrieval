@@ -99,6 +99,7 @@ class VideoSearch:
                 FROM keyframes
                 WHERE "file_id" = :video_id
                 AND "byte_offset" IS {is_null}
+                AND "isDeleted" = FALSE
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -252,6 +253,7 @@ class VideoSearch:
                 FROM keyframes
                 WHERE "user_id" = :user_id
                 AND "byte_offset" IS {is_null}
+                AND "isDeleted" = FALSE
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -410,6 +412,7 @@ class VideoSearch:
                 FROM keyframes
                 WHERE "user_id" = :user_id
                 AND "byte_offset" IS {is_null}
+                AND "isDeleted" = FALSE
                 ORDER BY distance 
                 LIMIT :limit;
             """)
@@ -450,7 +453,7 @@ class VideoSearch:
                 }      
         except Exception as e:
             return {
-                "status_code": HTTPSTATUS.FORBIDDEN,
+                "status_code": HTTPSTATUS.FORBIDDEN.code(),
                 "error": str(e)
             }         
 
@@ -497,6 +500,7 @@ class OCRSearch:
                 WHERE "user_id" = :user_id
                 AND "file_id" = :file_id
                 AND "byte_offset" IS {is_null}
+                AND "isDeleted" = FALSE
                 AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
                 ORDER BY kw_score DESC
                 LIMIT :limit;
@@ -640,6 +644,7 @@ class OCRSearch:
                 FROM keyframes
                 WHERE "user_id" = :user_id
                 AND "byte_offset" IS {is_null}
+                AND "isDeleted" = FALSE
                 AND to_tsvector('simple', ocr) @@ plainto_tsquery('simple', :search_term || ':*')
                 ORDER BY kw_score DESC
                 LIMIT :limit;
